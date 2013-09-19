@@ -13,4 +13,4 @@ cs229.o: cs229.c cs229.h sound.h
 	$(CC) $(CFLAGS) -c cs229.c
 
 clean:
-	rm -f *.o
+	rm -f *.o sndinfo
