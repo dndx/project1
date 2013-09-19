@@ -1,0 +1,4 @@
+*.o
+sndinfo
+sndconv
+*.tar.gz

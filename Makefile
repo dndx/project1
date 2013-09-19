@@ -1,5 +1,7 @@
 CFLAGS=-Wall -ansi -lm -g
 
+all: sndconv sndinfo
+
 sndconv: cs229.o sndconv.o aiff.o
 	$(CC) $(CFLAGS) cs229.o sndconv.o aiff.o -o sndconv
 
