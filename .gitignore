@@ -2,3 +2,6 @@
 sndinfo
 sndconv
 *.tar.gz
+*.dndx
+*.cs229
+*.aiff
