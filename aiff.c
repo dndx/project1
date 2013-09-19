@@ -96,7 +96,7 @@ struct soundfile aiff_fileinfo(FILE *file)
     return info;
 }
 
-int aiff_to_cs229(FILE *file, FILE *ofile, struct soundfile *info)
+int aiff_to_cs229(FILE *file, FILE *ofile, const struct soundfile *info)
 {
     char buffer[128];
 
