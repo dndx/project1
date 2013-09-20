@@ -25,3 +25,4 @@ utils.o: utils.h
 
 clean:
 	rm -f *.o sndinfo sndconv
+

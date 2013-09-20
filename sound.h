@@ -7,3 +7,4 @@ struct soundfile {
     unsigned short bit_depth;
 };
 #endif /* !SOUND_H_ */
+

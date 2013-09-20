@@ -6,12 +6,12 @@
  */
 unsigned long long int byte_swap_64(unsigned long long int x)
 {
-      register union { __extension__ uint64_t __ll;
-      uint32_t __l[2]; } __x;
-      __asm("xchgl  %0,%1":
-            "=r"(__x.__l[0]),"=r"(__x.__l[1]):
-            "0"(ntohl((unsigned long)x)),"1"(ntohl((unsigned long)(x>>32))));
-      return __x.__ll;
+    register union { __extension__ uint64_t __ll;
+                     uint32_t __l[2]; 
+                   } __x;
+    __asm("xchgl  %0,%1":
+          "=r"(__x.__l[0]),"=r"(__x.__l[1]):
+          "0"(ntohl((unsigned long)x)),"1"(ntohl((unsigned long)(x>>32))));
+    return __x.__ll;
 }
-
 
