@@ -3,6 +3,8 @@
 #include "config.h"
 #include <time.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <arpa/inet.h>
 
 #define STR(x) #x
 #define TOSTR(x) STR(x)
@@ -26,5 +28,7 @@
                           fprintf(stderr, "\e[01;31m %s FATAL: \e[0m" format " on File: %s Line: %s\n", timestr, ##__VA_ARGS__, __FILE__, TOSTR(__LINE__));exit(1);}\
                           while(0)
 
-#endif
+unsigned long long int ByteSwap64(unsigned long long int x);
+
+#endif /* !UTILS_H_ */
 

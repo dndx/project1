@@ -50,7 +50,6 @@ int main(int argc, char *argv[])
         FATAL("Could not open output file");
     }
 
-
     puts(DASHES);
 
     if (is_aiff_file(file))
@@ -66,6 +65,13 @@ int main(int argc, char *argv[])
         fprintf(ofile, "StartData\n");
         
         aiff_to_cs229(file, ofile, &fileinfo);
+    }
+    else if (is_cs229_file(file))
+    {
+        fprintf(stderr, "Input file is CS229 file, converting to AIFF...\n");
+        fileinfo = cs229_fileinfo(file);
+
+        cs229_to_aiff(file, ofile, &fileinfo);
     }
     
 
