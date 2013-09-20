@@ -4,7 +4,7 @@
  * This function flips byte order of a 64 bit int. 
  * Note: only works on 80386 CPUs
  */
-unsigned long long int ByteSwap64(unsigned long long int x)
+unsigned long long int byte_swap_64(unsigned long long int x)
 {
       register union { __extension__ uint64_t __ll;
       uint32_t __l[2]; } __x;

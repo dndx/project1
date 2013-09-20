@@ -28,7 +28,7 @@
                           fprintf(stderr, "\e[01;31m %s FATAL: \e[0m" format " on File: %s Line: %s\n", timestr, ##__VA_ARGS__, __FILE__, TOSTR(__LINE__));exit(1);}\
                           while(0)
 
-unsigned long long int ByteSwap64(unsigned long long int x);
+unsigned long long int byte_swap_64(unsigned long long int x);
 
 #endif /* !UTILS_H_ */
 

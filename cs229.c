@@ -129,7 +129,7 @@ int cs229_to_aiff(FILE *file, FILE *ofile, struct soundfile *info)
     }
 
     fraction <<= 63 - i;
-    fraction = ByteSwap64(fraction);
+    fraction = byte_swap_64(fraction);
 
     temp_16 = htons(i + 16383);
 

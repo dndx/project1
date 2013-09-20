@@ -72,7 +72,7 @@ struct soundfile aiff_fileinfo(FILE *file)
             exponent = ntohs(exponent);
             unsigned long fraction;
             fread(&fraction, 8, 1, file);
-            fraction = ByteSwap64(fraction);
+            fraction = byte_swap_64(fraction);
             fraction >>= (64 - (exponent - 16382));
 
             info.sample_rate = fraction;
