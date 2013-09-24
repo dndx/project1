@@ -1,0 +1,50 @@
+What this program does
+======================
+This project have two parts. sndinfo and sndconv. 
+
+sndinfo
+=======
+This program shows basic information about given file. They include:
+
+* Filename
+* Format (AIFF or CS229)
+* Sample Rate
+* Bit Depth
+* Channels
+* Samples
+* Duration
+
+Usage:
+======
+$ ./sndinfo
+
+sndconv
+=======
+This program takes an input file and an output file, the convert one file format to another. 
+
+Usage:
+======
+$ ./sndconv
+
+
+How did I broke files
+=====================
+utils.c   - Utility functions.
+utils.h   - Utility macros. 
+aiff.c    - AIFF check and processing unit. 
+cs229.c   - CS229 checka and processing unit. 
+sound.h   - Defined the soundinfo struct which shares among different units. 
+sndinfo.c - The executable file sndinfo, handles I/O and prompts.
+sndconv.c - The executable file sndconv, handles I/O and prompts.
+Makefile  - The Makefile for the whole project.  
+
+make will first compile dependency to object file then link them together. 
+
+Techniques
+==========
+* Use fread() and fwrite() for block read/write. 
+* Use struct to store sound informations. Passed struct * in function in order to save memory copy overload. 
+* Use as many built in functions as possible. Does not re-invent wheels. 
+* All code are valgrind warning-free (with --leak-check=full). 
+* Developed with Vim, GCC, GNU Make, gdb and tmux. 
+
