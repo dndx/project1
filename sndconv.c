@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     FILE *file, *ofile;
     struct soundfile fileinfo;
 
-    fprintf(stderr, "Enter the pathname of a sound file: \n");
+    fprintf(stderr, "Enter the pathname of a input sound file: \n");
     if (!fgets(filename, sizeof(filename), stdin))
     {
         FATAL("fgets failed");
@@ -74,8 +74,6 @@ int main(int argc, char *argv[])
         cs229_to_aiff(file, ofile, &fileinfo);
     }
     
-
-
     fprintf(stderr, "Done. \n");
 
     puts(DASHES);
@@ -83,12 +81,6 @@ int main(int argc, char *argv[])
     fclose(file);
     fclose(ofile);
 
-    /*
-    if (is_cs229_file(file))
-    {
-        LOGI("CS229 File!");
-    }
-    */
     return EXIT_SUCCESS;
 }
 
