@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <arpa/inet.h>
 #include "cs229.h"
 #include "utils.h"
@@ -162,13 +163,25 @@ int cs229_to_aiff(FILE *file, FILE *ofile, struct soundfile *info)
 
         if (start_convert)
         {
-            for (i=0; i<info->channels; i++)
+            char *result;
+
+            i = 0;
+
+            result = strtok(buffer, " ");
+
+            do
             {
-                sscanf(buffer, "%d", &data[i]);
+                if (result[0] == '\0')
+                    continue;
+
+                data[i] = atoi(result);
                 data[i] <<= info->bit_depth;
                 data[i] = htonl(data[i]);
                 fwrite(&data[i], info->bit_depth / 8, 1, ofile);
+                i++;
             }
+            while ((result = strtok(NULL, " ")) && i<info->channels);
+
         }
 
         if (!strcmp(buffer, "StartData"))
