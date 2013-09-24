@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 
     if (is_aiff_file(file))
     {
-        fprintf(stderr, "Input file is AIFF file, converting to CS229...\n");
+        LOGI("Input file is AIFF file, converting to CS229...\n");
         fileinfo = aiff_fileinfo(file);
 
         fprintf(ofile, "CS229\n");
@@ -68,13 +68,18 @@ int main(int argc, char *argv[])
     }
     else if (is_cs229_file(file))
     {
-        fprintf(stderr, "Input file is CS229 file, converting to AIFF...\n");
+        LOGI("Input file is CS229 file, converting to AIFF...\n");
         fileinfo = cs229_fileinfo(file);
 
         cs229_to_aiff(file, ofile, &fileinfo);
     }
+    else
+    {
+        LOGE("Unrecognized file %s, terminating...", filename);
+        return EXIT_FAILURE;
+    }
     
-    fprintf(stderr, "Done. \n");
+    LOGI("Done. \n");
 
     puts(DASHES);
 
