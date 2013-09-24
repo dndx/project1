@@ -20,7 +20,7 @@ $ ./sndinfo
 
 sndconv
 =======
-This program takes an input file and an output file, the convert one file format to another. 
+This program takes an input file and an output file, then convert one file format to another. 
 
 Usage:
 ======
