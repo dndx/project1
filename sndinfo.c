@@ -1,37 +1,97 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 #include "utils.h"
 #include "cs229.h"
 #include "aiff.h"
 
 #define DASHES "------------------------------------------------------------"
+void show_file_info(FILE *file, char *filename);
 
 int main(int argc, char *argv[])
 {
     char filename[128];
     char *nl;
     FILE *file;
+    char opt;
+    int i;
+
+    while ((opt = getopt(argc, argv, "h1")) != -1)
+    {
+        switch (opt)
+        {
+            case 'h':
+                fprintf(stderr, 
+                        "Usage: sndinfo [-h1] [file] [file]...\n"
+                        "Show information about files.\n\n"
+                        "Options:\n"
+                        "  -h  Display this information and exit\n"
+                        "  -1  Ignore all arguments and read input file name from stdin.\n"
+                        );
+                break;
+            case '1':
+                fprintf(stderr, "Enter the pathname of a sound file: \n");
+                
+                if (!fgets(filename, sizeof(filename), stdin))
+                {
+                    FATAL("fgets failed");
+                    return 1;
+                }
+
+                nl = strchr(filename, '\n');
+
+                if (nl)
+                {
+                    *nl = '\0';
+                }
+
+                file = fopen(filename, "r");
+
+                if (!file)
+                {
+                    FATAL("Could not open file");
+                }
+
+                show_file_info(file, filename);
+                fclose(file);
+                break;
+            case '?':
+                fprintf(stderr, "Unknown option `-%c`", optopt);
+                return EXIT_FAILURE;
+        }
+    }
+
+    if (argc > 1)
+    {
+        for (i=optind; i<argc; i++)
+        {
+            file = fopen(argv[i], "r");
+
+            if (!file)
+            {
+                FATAL("Could not open file");
+            }
+
+            show_file_info(file, argv[i]);
+            fclose(file);
+        }
+    }
+    else
+    {
+        show_file_info(stdin, "(standard input)");
+    }
+
+    puts(DASHES);
+
+    return EXIT_SUCCESS;
+}
+
+void show_file_info(FILE *file, char *filename)
+{
     struct soundfile fileinfo;
-
-    fprintf(stderr, "Enter the pathname of a sound file: \n");
-    if (!fgets(filename, sizeof(filename), stdin))
-    {
-        FATAL("fgets failed");
-        return 1;
-    }
-    nl = strchr(filename, '\n');
-    if (nl)
-    {
-        *nl = '\0';
-    }
-
-    file = fopen(filename, "r");
-    if (!file)
-    {
-        FATAL("Could not open file");
-    }
-
+    
     puts(DASHES);
 
     printf("%12s %s\n", "Filename:", filename);
@@ -58,17 +118,5 @@ int main(int argc, char *argv[])
     double duration = (double)fileinfo.sample_num / fileinfo.sample_rate;
 
     printf("%12s %.0f:%02.0f:%05.2f\n", "Duration:", floor(duration / 3600), floor(fmod(duration, 3600) / 60), fmod(fmod(duration, 3600), 60));
-
-    puts(DASHES);
-
-    fclose(file);
-
-    /*
-    if (is_cs229_file(file))
-    {
-        LOGI("CS229 File!");
-    }
-    */
-    return EXIT_SUCCESS;
 }
 
