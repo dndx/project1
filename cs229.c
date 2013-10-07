@@ -26,6 +26,16 @@ int is_cs229_file(FILE *file)
     return 0;
 }
 
+void write_cs229_header(FILE *ofile, const struct soundfile *info)
+{
+    fprintf(ofile, "CS229\n");
+    fprintf(ofile, "Samples %u\n", info->sample_num);
+    fprintf(ofile, "Channels %u\n", info->channels);
+    fprintf(ofile, "BitDepth %u\n", info->bit_depth);
+    fprintf(ofile, "SampleRate %u\n\n", info->sample_rate);
+    fprintf(ofile, "StartData\n");
+}
+
 struct soundfile cs229_fileinfo(FILE *file)
 {
     char buffer[128];

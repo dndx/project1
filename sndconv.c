@@ -178,13 +178,8 @@ void snd_conv(FILE *file, FILE *ofile, char *in_name, enum format output_format)
         LOGI("Input file is AIFF file, converting to CS229...\n");
         fileinfo = aiff_fileinfo(file);
 
-        fprintf(ofile, "CS229\n");
-        fprintf(ofile, "Samples %u\n", fileinfo.sample_num);
-        fprintf(ofile, "Channels %u\n", fileinfo.channels);
-        fprintf(ofile, "BitDepth %u\n", fileinfo.bit_depth);
-        fprintf(ofile, "SampleRate %u\n\n", fileinfo.sample_rate);
-        fprintf(ofile, "StartData\n");
-        
+        write_cs229_header(ofile, &fileinfo);
+
         aiff_enumerate(file, &fileinfo, write_to_cs229, ofile);
     }
     else if (is_cs229_file(file))
