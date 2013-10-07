@@ -6,5 +6,8 @@ struct soundfile {
     unsigned short channels;
     unsigned short bit_depth;
 };
+
+typedef void (*sample_cb)(int *samples, const struct soundfile *info, void *data);
+
 #endif /* !SOUND_H_ */
 

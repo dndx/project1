@@ -2,5 +2,5 @@
 
 int is_aiff_file(FILE *file);
 struct soundfile aiff_fileinfo(FILE *file);
-int aiff_to_cs229(FILE *file, FILE *ofile, const struct soundfile *info);
+int aiff_enumerate(FILE *file, const struct soundfile *info, sample_cb cb, void *data);
 

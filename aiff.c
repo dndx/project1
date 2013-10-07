@@ -81,7 +81,7 @@ struct soundfile aiff_fileinfo(FILE *file)
     return info;
 }
 
-int aiff_to_cs229(FILE *file, FILE *ofile, const struct soundfile *info)
+int aiff_enumerate(FILE *file, const struct soundfile *info, sample_cb cb, void *data)
 {
     char buffer[128];
 
@@ -93,7 +93,7 @@ int aiff_to_cs229(FILE *file, FILE *ofile, const struct soundfile *info)
     {
         unsigned int size;
 
-        if (memcmp(buffer, "SSND", 4)) /* Not COMM */
+        if (memcmp(buffer, "SSND", 4)) /* Not SSND */
         {
             fread(&size, 4, 1, file);
             size = ntohl(size);
@@ -104,7 +104,7 @@ int aiff_to_cs229(FILE *file, FILE *ofile, const struct soundfile *info)
         {
             fseek(file, 12, SEEK_CUR);
 
-            int data[info->channels];
+            int samples[info->channels];
             
             int i; 
             for (i=0; i<info->sample_num; i++)
@@ -112,17 +112,12 @@ int aiff_to_cs229(FILE *file, FILE *ofile, const struct soundfile *info)
                 int j;
                 for (j=0; j<info->channels; j++)
                 {
-                    fread(&data[j], info->bit_depth / 8, 1, file);
-                    data[j] = ntohl(data[j]);
-                    data[j] >>= 32 - info->bit_depth;
+                    fread(&samples[j], info->bit_depth / 8, 1, file);
+                    samples[j] = ntohl(samples[j]);
+                    samples[j] >>= 32 - info->bit_depth;
                 }
 
-                fprintf(ofile, "%d", data[0]);
-
-                for (j=1; j<info->channels; j++)
-                    fprintf(ofile, " %d", data[j]);
-
-                fprintf(ofile, "\n");
+                cb(samples, info, data);
             }
         }
     }

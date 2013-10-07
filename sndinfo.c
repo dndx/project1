@@ -31,6 +31,7 @@ int main(int argc, char *argv[])
                         "  -1  Ignore all arguments and read input file name from stdin.\n"
                         );
                 break;
+
             case '1':
                 fprintf(stderr, "Enter the pathname of a sound file: \n");
                 
@@ -57,8 +58,8 @@ int main(int argc, char *argv[])
                 show_file_info(file, filename);
                 fclose(file);
                 break;
+
             case '?':
-                fprintf(stderr, "Unknown option `-%c`", optopt);
                 return EXIT_FAILURE;
         }
     }
