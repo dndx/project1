@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
                         "  -h  Display this information and exit\n"
                         "  -1  Ignore all arguments and read input file name from stdin.\n"
                         );
-                break;
+                return EXIT_SUCCESS;
 
             case '1':
                 fprintf(stderr, "Enter the pathname of a sound file: \n");
