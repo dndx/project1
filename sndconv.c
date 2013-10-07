@@ -150,6 +150,19 @@ void write_to_cs229(int *samples, const struct soundfile *info, void *data)
     fprintf(ofile, "\n");
 }
 
+void write_to_aiff(int *samples, const struct soundfile *info, void *data)
+{
+    FILE *ofile = (FILE *) data;
+    
+    int i;
+    for (i=0; i<info->channels; i++)
+    {
+        samples[i] <<= info->bit_depth;
+        samples[i] = htonl(samples[i]);
+        fwrite(&samples[i], info->bit_depth / 8, 1, ofile);
+    }
+}
+
 void snd_conv(FILE *file, FILE *ofile, char *in_name, enum format output_format)
 {
     struct soundfile fileinfo;
@@ -185,7 +198,60 @@ void snd_conv(FILE *file, FILE *ofile, char *in_name, enum format output_format)
         LOGI("Input file is CS229 file, converting to AIFF...\n");
         fileinfo = cs229_fileinfo(file);
 
-        cs229_to_aiff(file, ofile, &fileinfo);
+        unsigned int temp_32;
+        unsigned short temp_16;
+
+        fputs("FORM", ofile);
+        
+        temp_32 = 4 + 4 + 4 + 18 + 4 + 4 + 4 + 4
+                  + (fileinfo.bit_depth / 8) * fileinfo.channels * fileinfo.sample_num;
+        temp_32 = htonl(temp_32); /* File SIze */
+        fwrite(&temp_32, 4, 1, ofile);
+
+        fputs("AIFFCOMM", ofile);
+
+        temp_32 = htonl(18); /* COMM Chunk size */
+        fwrite(&temp_32, 4, 1, ofile);
+
+        temp_16 = htons(fileinfo.channels); /* NumChannels  */
+        fwrite(&temp_16, 2, 1, ofile);
+
+        temp_32 = htonl(fileinfo.sample_num); /* NumSampleFrames */
+        fwrite(&temp_32, 4, 1, ofile);
+
+        temp_16 = htons(fileinfo.bit_depth); /* SampleSize */
+        fwrite(&temp_16, 2, 1, ofile);
+
+        unsigned long fraction;
+        fraction = fileinfo.sample_rate;
+        int i;
+
+        for (i=63; i>=0; i--)
+        {
+            if (fraction & (0x01UL << i)) /* Found the integer */
+                break; 
+        }
+
+        fraction <<= 63 - i;
+        fraction = byte_swap_64(fraction);
+
+        temp_16 = htons(i + 16383);
+
+        fwrite(&temp_16, 2, 1, ofile);
+        fwrite(&fraction, 8, 1, ofile);
+
+        fputs("SSND", ofile);
+
+        temp_32 = (fileinfo.bit_depth / 8) * fileinfo.channels * fileinfo. sample_num + 8;
+        temp_32 = htonl(temp_32);
+        /* Chunk size */
+        fwrite(&temp_32, 4, 1, ofile);
+
+        temp_32 = 0;
+        fwrite(&temp_32, 4, 1, ofile); /* Offset */
+        fwrite(&temp_32, 4, 1, ofile); /* BlockSize */
+
+        cs229_enumerate(file, &fileinfo, write_to_aiff, ofile);
     }
     else
     {
