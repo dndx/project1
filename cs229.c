@@ -36,11 +36,25 @@ void write_cs229_header(FILE *ofile, const struct soundfile *info)
     fprintf(ofile, "StartData\n");
 }
 
+void write_to_cs229(int *samples, const struct soundfile *info, void *data)
+{
+    FILE *ofile = (FILE *) data;
+
+    fprintf(ofile, "%d", samples[0]);
+
+    int j;
+    for (j=1; j<info->channels; j++)
+        fprintf(ofile, " %d", samples[j]);
+
+    fprintf(ofile, "\n");
+}
+
 struct soundfile cs229_fileinfo(FILE *file)
 {
     char buffer[128];
     struct soundfile fileinfo;
     memset(&fileinfo, 0, sizeof(fileinfo));
+    fileinfo.format = CS229;
 
     rewind(file);
     while (fgets(buffer, sizeof(buffer), file))

@@ -1,12 +1,18 @@
 CFLAGS=-Wall -ansi -lm -g
 
-all: sndconv sndinfo
+all: sndconv sndinfo sndcat
+
+sndcat: cs229.o sndcat.o aiff.o utils.o
+	$(CC) $(CFLAGS) cs229.o sndcat.o aiff.o utils.o -o sndcat
 
 sndconv: cs229.o sndconv.o aiff.o utils.o
 	$(CC) $(CFLAGS) cs229.o sndconv.o aiff.o utils.o -o sndconv
 
 sndinfo: cs229.o sndinfo.o aiff.o utils.o
 	$(CC) $(CFLAGS) cs229.o sndinfo.o aiff.o utils.o -o sndinfo
+
+sndcat.o: sndcat.c cs229.h utils.h aiff.h
+	$(CC) $(CFLAGS) -c sndcat.c
 
 sndconv.o: sndconv.c cs229.h utils.h aiff.h
 	$(CC) $(CFLAGS) -c sndconv.c

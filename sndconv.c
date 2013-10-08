@@ -7,12 +7,7 @@
 #include "aiff.h"
 
 #define DASHES "------------------------------------------------------------"
-enum format {
-    OTHER,
-    AIFF,
-    CS229
-};
-void snd_conv(FILE *file, FILE *ofile, char *in_name, enum format output_format);
+void snd_conv(FILE *file, FILE *ofile, char *in_name, enum fileformat output_format);
 
 int main(int argc, char *argv[])
 {
@@ -20,7 +15,7 @@ int main(int argc, char *argv[])
     char *nl;
     FILE *file, *ofile;
     char opt;
-    enum format output_format = OTHER;
+    enum fileformat output_format = OTHER;
 
     while ((opt = getopt(argc, argv, "h1ac")) != -1)
     {
@@ -137,33 +132,7 @@ void copy_file(FILE *file, FILE *ofile)
     }
 }
 
-void write_to_cs229(int *samples, const struct soundfile *info, void *data)
-{
-    FILE *ofile = (FILE *) data;
-
-    fprintf(ofile, "%d", samples[0]);
-
-    int j;
-    for (j=1; j<info->channels; j++)
-        fprintf(ofile, " %d", samples[j]);
-
-    fprintf(ofile, "\n");
-}
-
-void write_to_aiff(int *samples, const struct soundfile *info, void *data)
-{
-    FILE *ofile = (FILE *) data;
-    
-    int i;
-    for (i=0; i<info->channels; i++)
-    {
-        samples[i] <<= info->bit_depth;
-        samples[i] = htonl(samples[i]);
-        fwrite(&samples[i], info->bit_depth / 8, 1, ofile);
-    }
-}
-
-void snd_conv(FILE *file, FILE *ofile, char *in_name, enum format output_format)
+void snd_conv(FILE *file, FILE *ofile, char *in_name, enum fileformat output_format)
 {
     struct soundfile fileinfo;
 

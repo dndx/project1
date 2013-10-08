@@ -35,6 +35,8 @@ struct soundfile aiff_fileinfo(FILE *file)
 {
     char buffer[128];
     struct soundfile info;
+    memset(&info, 0, sizeof(info));
+    info.format = AIFF;
 
     rewind(file);
 
@@ -135,6 +137,19 @@ void write_aiff_header(FILE *ofile, const struct soundfile *info)
     temp_32 = 0;
     fwrite(&temp_32, 4, 1, ofile); /* Offset */
     fwrite(&temp_32, 4, 1, ofile); /* BlockSize */
+}
+
+void write_to_aiff(int *samples, const struct soundfile *info, void *data)
+{
+    FILE *ofile = (FILE *) data;
+    
+    int i;
+    for (i=0; i<info->channels; i++)
+    {
+        samples[i] <<= info->bit_depth;
+        samples[i] = htonl(samples[i]);
+        fwrite(&samples[i], info->bit_depth / 8, 1, ofile);
+    }
 }
 
 int aiff_enumerate(FILE *file, const struct soundfile *info, sample_cb cb, void *data)
