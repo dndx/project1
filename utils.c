@@ -15,3 +15,16 @@ unsigned long long int byte_swap_64(unsigned long long int x)
     return __x.__ll;
 }
 
+void copy_file(FILE *file, FILE *ofile)
+{
+    int c;
+
+    rewind(file);
+    rewind(ofile);
+
+    while ((c = fgetc(file)) != EOF)
+    {
+        fputc(c, ofile);
+    }
+}
+

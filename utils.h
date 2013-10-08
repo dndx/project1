@@ -1,6 +1,7 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 #include "config.h"
+#include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -29,6 +30,7 @@
                           while(0)
 
 unsigned long long int byte_swap_64(unsigned long long int x);
+void copy_file(FILE *file, FILE *ofile);
 
 #endif /* !UTILS_H_ */
 

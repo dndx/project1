@@ -119,19 +119,6 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-void copy_file(FILE *file, FILE *ofile)
-{
-    int c;
-
-    rewind(file);
-    rewind(ofile);
-
-    while ((c = fgetc(file)) != EOF)
-    {
-        fputc(c, ofile);
-    }
-}
-
 void snd_conv(FILE *file, FILE *ofile, char *in_name, enum fileformat output_format)
 {
     struct soundfile fileinfo;

@@ -1,6 +1,12 @@
 CFLAGS=-Wall -ansi -lm -g
 
-all: sndconv sndinfo sndcat
+all: sndconv sndinfo sndcat sndcut sndshow
+
+sndshow: cs229.o sndshow.o aiff.o utils.o
+	$(CC) $(CFLAGS) cs229.o sndshow.o aiff.o utils.o -o sndshow
+
+sndcut: cs229.o sndcut.o aiff.o utils.o
+	$(CC) $(CFLAGS) cs229.o sndcut.o aiff.o utils.o -o sndcut
 
 sndcat: cs229.o sndcat.o aiff.o utils.o
 	$(CC) $(CFLAGS) cs229.o sndcat.o aiff.o utils.o -o sndcat
@@ -10,6 +16,12 @@ sndconv: cs229.o sndconv.o aiff.o utils.o
 
 sndinfo: cs229.o sndinfo.o aiff.o utils.o
 	$(CC) $(CFLAGS) cs229.o sndinfo.o aiff.o utils.o -o sndinfo
+
+sndshow.o: sndshow.c cs229.h utils.h aiff.h
+	$(CC) $(CFLAGS) -c sndshow.c
+
+sndcut.o: sndcut.c cs229.h utils.h aiff.h
+	$(CC) $(CFLAGS) -c sndcut.c
 
 sndcat.o: sndcat.c cs229.h utils.h aiff.h
 	$(CC) $(CFLAGS) -c sndcat.c
