@@ -173,6 +173,9 @@ int main(int argc, char *argv[])
 
             case 'z':
                 z = atoi(optarg);
+                
+                if (z < 1)
+                    FATAL("Zoom factor must greater than 0");
                 break;
 
             case '?':
