@@ -1,6 +1,8 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/param.h>
+#include <string.h>
 #include "utils.h"
 #include "cs229.h"
 #include "aiff.h"
@@ -77,6 +79,12 @@ int main(int argc, char *argv[])
     }
 
     int i;
+    file = tmpfile();
+
+    int c;
+        
+    while ((c = fgetc(stdin)) != EOF)
+        fputc(c, file);
 
     if (optind < argc)
     {
@@ -84,13 +92,6 @@ int main(int argc, char *argv[])
         int total_sample_num = 0;
         struct deletion ranges[argc - optind];
 
-        file = tmpfile();
-
-        int c;
-        
-        while ((c = fgetc(stdin)) != EOF)
-            fputc(c, file);
-    
         if (is_cs229_file(file))
             fileinfo = cs229_fileinfo(file);
         else if (is_aiff_file(file))
@@ -100,28 +101,50 @@ int main(int argc, char *argv[])
 
         total_sample_num = fileinfo.sample_num;
 
+        int total_ranges = 0;
+
         for (i=optind; i<argc; i++)
         {
-            if (sscanf(argv[i], "[%u..%u]", &ranges[i - optind].low, &ranges[i - optind].high) != 2)
+            unsigned int low, high;
+            
+            if (strchr(argv[i], '-'))
+                FATAL("Range should not contain negative number");
+
+            if (sscanf(argv[i], "%u..%u", &low, &high) != 2)
                 FATAL("Unrecognized argument %s", argv[i]);
 
-            if (ranges[i - optind].low > ranges[i-optind].high)
+            if (low > high)
                 FATAL("Invalid argument %s, low must less or equal to high", argv[i]);
             
-            if (ranges[i - optind].high > fileinfo.sample_num - 1)
+            if (high > fileinfo.sample_num - 1)
                 FATAL("Invalid argument %s, exceed maximum sample number", argv[i]);
 
-            total_sample_num -= (ranges[i - optind].high - ranges[i - optind].low + 1);
-
             int j;
+            int set = 0; /* This range got addes to existing range */
             for (j=0; j<i-optind; j++)
             {
-                if (ranges[i - optind].low <= ranges[j].high &&
-                    ranges[j].low <= ranges[i - optind].high)
-                    FATAL("Range %s overlaps with other ranges, please correct your input", argv[i]);
+                if (low <= ranges[j].high &&
+                    ranges[j].low <= high) /* Overlaps with existing range */
+                {
+                    ranges[j].low = MIN(low, ranges[j].low);
+                    ranges[j].high = MAX(high, ranges[j].high);
+                    set = 1;
+                    break;
+                }
+            }
+
+            if (!set) /* Add as new range */
+            {
+                ranges[i - optind].low = low;
+                ranges[i - optind].high = high;
+                total_ranges++;
             }
         }
 
+        for (i=0; i<total_ranges; i++)
+        {
+            total_sample_num -= ranges[i].high - ranges[i].low + 1;
+        }
         struct soundfile output_file;
         output_file = fileinfo;
         output_file.sample_num = total_sample_num;
@@ -141,13 +164,16 @@ int main(int argc, char *argv[])
         else /* CS229 */
             cs229_enumerate(file, &fileinfo, output_file.format == AIFF ? write_to_aiff_cut : write_to_cs229_cut, &req);
 
-        fclose(file);
     }
     else /* Read from stdin */
     {
-        copy_file(stdin, stdout);
+        if (is_cs229_file(file) || is_aiff_file(file))
+            copy_file(file, stdout);
+        else
+            FATAL("Sound file not recognized or format invalid");
     }
 
+    fclose(file);
     return EXIT_SUCCESS;
 }
 

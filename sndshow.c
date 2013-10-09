@@ -75,7 +75,9 @@ void draw_cb(int *samples, const struct soundfile *info, void *data)
 
     if (req->z > 1)
     {
-        
+        int is_key_sample = (!((req->sample_num + 1) % req->z)) || 
+                            (req->sample_num + 1 == info->sample_num);
+
         for (i=0; i<info->channels; i++)
         {
             if (abs(samples[i]) > abs(req->largest[i]))
@@ -84,7 +86,7 @@ void draw_cb(int *samples, const struct soundfile *info, void *data)
                 req->largest[i] = samples[i];
         }
 
-        if ((req->sample_num % (req->z - 1)) || !req->sample_num)
+        if (!is_key_sample)
         {
             req->sample_num++;
             return;
@@ -95,10 +97,13 @@ void draw_cb(int *samples, const struct soundfile *info, void *data)
             samples[i] = req->largest[i];
         }
 
-        if (!(req->sample_num % (req->z - 1)))
+        if (is_key_sample)
             memset(req->largest, 0, info->channels * sizeof(int));
-        
-        printf("%9d", (((req->sample_num / (req->z - 1))) - 1) * req->z);
+
+        if (req->sample_num + 1 == info->sample_num)
+            req->sample_num += (req->z - (req->sample_num % req->z));
+
+        printf("%9d", ((((req->sample_num + 1) / req->z)) - 1) * req->z);
     }
     else
     {

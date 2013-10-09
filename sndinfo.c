@@ -108,7 +108,7 @@ void show_file_info(FILE *file, char *filename)
         fileinfo = aiff_fileinfo(file);
     }
     else
-        FATAL("Unknown file format");
+        FATAL("Unknown sound file format");
 
 
     printf("%12s %d\n", "Sample Rate:", fileinfo.sample_rate);

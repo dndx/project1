@@ -11,6 +11,8 @@ int is_cs229_file(FILE *file)
 
     rewind(file);
 
+    struct soundfile info;
+
     while (fgets(buffer, sizeof(buffer), file))
     {
         buffer[strlen(buffer) - 1] = '\0';
@@ -18,8 +20,21 @@ int is_cs229_file(FILE *file)
         {
             continue;
         }
+
         if (!strcmp(buffer, "CS229"))
         {
+            info = cs229_fileinfo(file);
+            
+            if (!(info.sample_rate && info.channels && info.bit_depth))
+                FATAL("Not a valid CS229 file!");
+
+            int counter = 0;
+
+            cs229_enumerate(file, &info, sample_count, &counter);
+
+            if (counter != info.sample_num)
+                FATAL("Not a valid CS229 file, missing samples!");
+
             return 1;
         }
     }

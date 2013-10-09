@@ -28,6 +28,14 @@ int is_aiff_file(FILE *file)
         return 0;
     }
 
+    struct soundfile info = aiff_fileinfo(file);
+    int counter = 0;
+
+    aiff_enumerate(file, &info, sample_count, &counter);
+
+    if (counter != info.sample_num)
+        FATAL("Not a valid AIFF file, missing samples!");
+
     return 1;
 }
 
@@ -178,7 +186,7 @@ int aiff_enumerate(FILE *file, const struct soundfile *info, sample_cb cb, void 
             int samples[info->channels];
             
             int i; 
-            for (i=0; i<info->sample_num; i++)
+            for (i=0; i<info->sample_num && !feof(file); i++)
             {
                 int j;
                 for (j=0; j<info->channels; j++)

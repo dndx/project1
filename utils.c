@@ -28,3 +28,9 @@ void copy_file(FILE *file, FILE *ofile)
     }
 }
 
+void sample_count(int *samples, const struct soundfile *info, void *data)
+{
+    int *counter = (int *) data;
+    (*counter)++;
+}
+

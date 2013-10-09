@@ -151,8 +151,7 @@ void snd_conv(FILE *file, FILE *ofile, char *in_name, enum fileformat output_for
     }
     else
     {
-        LOGE("Unrecognized file %s, terminating...", in_name);
-        exit(EXIT_FAILURE);
+        FATAL("Unrecognized file %s, terminating...", in_name);
     }
 }
 
