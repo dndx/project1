@@ -25,10 +25,10 @@ int main(int argc, char *argv[])
             case 'h':
                 fprintf(stderr, 
                         "Usage: sndinfo [-h1] [file] [file]...\n"
-                        "Show information about files.\n\n"
+                        "Show information about files. If no argument specified, read from standard input.\n\n"
                         "Options:\n"
                         "  -h  Display this information and exit\n"
-                        "  -1  Ignore all arguments and read input file name from stdin.\n"
+                        "  -1  Ignore all arguments and read input file name from stdin\n"
                         );
                 return EXIT_SUCCESS;
 
@@ -57,6 +57,8 @@ int main(int argc, char *argv[])
 
                 show_file_info(file, filename);
                 fclose(file);
+
+                return EXIT_SUCCESS;
                 break;
 
             case '?':
@@ -81,7 +83,15 @@ int main(int argc, char *argv[])
     }
     else
     {
-        show_file_info(stdin, "(standard input)");
+        file = tmpfile();
+        int c;
+        
+        while ((c = fgetc(stdin)) != EOF)
+            fputc(c, file);
+
+        show_file_info(file, "(standard input)");
+        
+        fclose(file);
     }
 
     puts(DASHES);
