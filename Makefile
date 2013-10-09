@@ -42,5 +42,5 @@ utils.o: utils.h
 	$(CC) $(CFLAGS) -c utils.c
 
 clean:
-	rm -f *.o sndinfo sndconv
+	rm -f *.o sndconv sndinfo sndcat sndcut sndshow
 

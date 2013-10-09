@@ -1,6 +1,6 @@
 What this program does
 ======================
-This project have two parts. sndinfo and sndconv. 
+This project have four parts. sndinfo, sndconv, sndcat, sndcut and sndshow. 
 
 sndinfo
 =======
@@ -16,35 +16,88 @@ This program shows basic information about given file. They include:
 
 Usage:
 ======
-$ ./sndinfo
+$ ./sndinfo -h
 
 sndconv
 =======
-This program takes an input file and an output file, then convert one file format to another. 
+This program takes an input file and an output file, then convert one 
+file format to specified format. 
 
 Usage:
 ======
-$ ./sndconv
+$ ./sndconv -h
 
+sndcat
+======
+This program concatenate multipul sound files to specified format and 
+write into stdout. 
+The output format will default to CS229 if not specified.
+
+Usage:
+======
+$ ./sndcat -h
+
+sndcut
+======
+This program reads a sound file from the standard input stream, 
+and writes the sound file to the standard output stream in the same 
+format, after removing all samples specied as arguments (example 100..1000).
+
+Usage:
+======
+$ ./sndcut -h
+
+sndshow
+=======
+This program shows the sound wave as ASCII art. 
+
+Usage:
+======
+$ ./sndshow -h
 
 How did I broke files
 =====================
-utils.c   - Utility functions.
-utils.h   - Utility macros. 
-aiff.c    - AIFF check and processing unit. 
-cs229.c   - CS229 checka and processing unit. 
-sound.h   - Defined the soundinfo struct which shares among different units. 
-sndinfo.c - The executable file sndinfo, handles I/O and prompts.
-sndconv.c - The executable file sndconv, handles I/O and prompts.
-Makefile  - The Makefile for the whole project.  
+aiff.c    - AIFF check and processing unit
+aiff.h    - Header file of aiff.c
+config.h  - Global configurations
+cs229.c   - CS229 checka and processing unit
+cs229.h   - Header file of cs229.c
+sndcat.c  - Main function of sndcat
+sndconv.c - Main function of sndconv
+sndcut.c  - Main function of sndcut
+sndinfo.c - Main function of sndinfo
+sndshow.c - Main function of sndshow
+sound.h   - Define common data structures shared across whole project
+utils.c   - Utility functions
+utils.h   - Utility macros
+Makefile  - The Makefile for the whole project
 
 make will first compile dependency to object file then link them together. 
 
 Techniques
 ==========
+
+Part 1
+======
 * Use fread() and fwrite() for block read/write. 
-* Use struct to store sound informations. Passed struct * in function in order to save memory copy overload. 
+* Use struct to store sound informations. Passed struct * in function 
+  in order to save memory copy overload. 
 * Use as many built in functions as possible. Does not re-invent wheels. 
+
+Part 2
+======
+* Abstract sound file reader for different file format and use callbacks
+  to process data. Minimized code redundancy and memory use. This program could
+  process file with ANY size with only little memory. 
+* Did not use any heap memory, simple, fast and leak-free, yay!
+* Use getopt(3) for command line argument parsing. This function did better job
+  than any of my code I could write. 
+* Managed to maximum code reuse, whole part two only contains 1071 lines of code. 
+
+Whole Project
+=============
 * All code are valgrind warning-free (with --leak-check=full). 
-* Developed with Vim, GCC, GNU Make, gdb and tmux. 
+* Developed with Vim, GCC, GNU Make, gdb, git and tmux on Pyrite.
+  You could git log to see my progress from beginning if you want. 
+  Also, codes from part1 is available with git tag "part1". 
 

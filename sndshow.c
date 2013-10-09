@@ -151,14 +151,24 @@ int main(int argc, char *argv[])
                                                ", the default is 80\n"
                         "  -z (factor)          Zoom out by a factor of n. If not specied, the default is 1\n"
                         );
+                return EXIT_SUCCESS;
                 break;
 
             case 'c':
                 c = atoi(optarg);
+
+                if (c < 1)
+                    FATAL("Channel number must be greater than 0");
                 break;
 
             case 'w':
                 w = atoi(optarg);
+
+                if (w % 2)
+                    FATAL("Width must be even");
+
+                if (w < 20)
+                    FATAL("Width must be greater than 20");
                 break;
 
             case 'z':
@@ -185,6 +195,9 @@ int main(int argc, char *argv[])
         fileinfo = aiff_fileinfo(file);
     else
         FATAL("Unrecognized file (standard input)");
+
+    if (c > fileinfo.channels)
+        FATAL("Channel number is too big for this file");
 
     struct draw_req req;
     int tmp[fileinfo.channels];

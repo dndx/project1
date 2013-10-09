@@ -18,12 +18,14 @@ int main(int argc, char *argv[])
             case 'h':
                 fprintf(stderr, 
                         "Usage: sndcat [-hac] [file] [file]...\n"
-                        "Concatenate file(s), or standard input, to standard output.\n\n"
+                        "Concatenate file(s), or standard input, to standard output.\n"
+                        "Output format will be default to CS229, unless specified by user.\n\n"
                         "Options:\n"
                         "  -h  Display this information and exit\n"
                         "  -a  Output should be AIFF\n"
                         "  -c  Output should be CS229\n"
                         );
+                return EXIT_SUCCESS;
                 break;
 
             case 'a':

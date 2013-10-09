@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
                         "Options:\n"
                         "  -h  Display this information and exit\n"
                         );
+                return EXIT_SUCCESS;
                 break;
 
             case '?':

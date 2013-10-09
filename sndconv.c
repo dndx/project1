@@ -31,6 +31,7 @@ int main(int argc, char *argv[])
                         "  -a  Output should be AIFF, regardless of the input format\n"
                         "  -c  Output should be CS229, regardless of the input format\n"
                         );
+                return EXIT_SUCCESS;
                 break;
 
             case '1':

@@ -154,7 +154,7 @@ void write_to_aiff(int *samples, const struct soundfile *info, void *data)
     int i;
     for (i=0; i<info->channels; i++)
     {
-        samples[i] <<= info->bit_depth;
+        samples[i] <<= (sizeof(int) * 8) - info->bit_depth;
         samples[i] = htonl(samples[i]);
         fwrite(&samples[i], info->bit_depth / 8, 1, ofile);
     }
