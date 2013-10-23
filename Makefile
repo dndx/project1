@@ -1,6 +1,9 @@
-CFLAGS=-Wall -ansi -lm -g -DNDEBUG
+CFLAGS=-Wall -ansi -lm -lncurses -g #-DNDEBUG
 
-all: sndconv sndinfo sndcat sndcut sndshow
+all: sndconv sndinfo sndcat sndcut sndshow sndedit
+
+sndedit: cs229.o aiff.o sndedit.o utils.o
+	$(CC) $(CFLAGS) cs229.o aiff.o sndedit.o utils.o -o sndedit
 
 sndshow: cs229.o sndshow.o aiff.o utils.o
 	$(CC) $(CFLAGS) cs229.o sndshow.o aiff.o utils.o -o sndshow
@@ -16,6 +19,9 @@ sndconv: cs229.o sndconv.o aiff.o utils.o
 
 sndinfo: cs229.o sndinfo.o aiff.o utils.o
 	$(CC) $(CFLAGS) cs229.o sndinfo.o aiff.o utils.o -o sndinfo
+
+sndedit.o: sndedit.c cs229.h aiff.h utils.h
+	$(CC) $(CFLAGS) -c sndedit.c
 
 sndshow.o: sndshow.c cs229.h utils.h aiff.h
 	$(CC) $(CFLAGS) -c sndshow.c
@@ -42,5 +48,5 @@ utils.o: utils.h
 	$(CC) $(CFLAGS) -c utils.c
 
 clean:
-	rm -f *.o sndconv sndinfo sndcat sndcut sndshow
+	rm -f *.o sndconv sndinfo sndcat sndcut sndshow sndedit
 
