@@ -10,31 +10,37 @@
 #include "cs229.h"
 #include "aiff.h"
 
+/* Middle like of sample shown area */
 #define MIDDLE_LINE (maxx - 32) / 2 + 10
 
+/* SOme global variables to keep track of state */
 static int top_sample, bottom_sample, mark_start = -1, marking;
 static int current_sample = 0;
 static int *sample_buffer = NULL;
 static int sample_buffer_len = 0;
 static int changed = 0;
 
-
+/* Sample loading request */
 struct loadreq {
-    int count;
-    int *dst;
+    int count; /* Counter, callback needs increment this */
+    int *dst; /* Destination where loaded samples goes */
 };
 
+/**
+ * Callback for loading one sample into the buffer
+ */
 void load_samples(int *samples, const struct soundfile *info, void *data)
 {
     struct loadreq *loadreq = (struct loadreq *) data;
+    /* Copy all channels in samples array to buffer */
     memcpy(loadreq->dst + (loadreq->count * info->channels), samples, info->channels * sizeof(int));
     loadreq->count++;
 
-    int keypoint = (int) (info->sample_num * 0.005);
+    int keypoint = (int) (info->sample_num * 0.005); /* Update loading progress every 0.5% for performance reason */
     if (!keypoint)
         keypoint = 1;
 
-    if (!(loadreq->count % keypoint) || loadreq->count == info->sample_num)
+    if (!(loadreq->count % keypoint) || loadreq->count == info->sample_num) /* Update progress every 0.5% or when finished */
     {
         move(2, 0);
         clrtoeol();
@@ -45,7 +51,12 @@ void load_samples(int *samples, const struct soundfile *info, void *data)
 }
 
 /**
- * start: absolute value
+ * Draw sample display area
+ *
+ * maxx max width of screen
+ * maxy max height of screen
+ * samples buffer contains all loaded samples, NULL means no sample available
+ * start: draw from this sample, starts from 0, -1 means no sample available
  */
 void draw_left_panel(int maxx, int maxy, const struct soundfile *info, int *samples, int start)
 {
@@ -54,19 +65,19 @@ void draw_left_panel(int maxx, int maxy, const struct soundfile *info, int *samp
 
     top_sample = start;
 
-    for (i=0; 2+i<maxy; i++)
+    for (i=0; 2+i<maxy; i++) /* Went from top to bottom */
     {
         
         move(2 + i, 0);
 
-        if (!samples)
+        if (!samples) /* No sample available */
         {
             int j;
-            for (j=0; j<maxx-21; j++)
+            for (j=0; j<maxx-21; j++) /* clean existing window */
                 addch(' ');
             addch('|');
 
-            if (i + 2 == maxy - 1)
+            if (i + 2 == maxy - 1) /* Clean completed */
             {
                 mvprintw(2, 0, "No Samples");
                 refresh();
@@ -76,7 +87,7 @@ void draw_left_panel(int maxx, int maxy, const struct soundfile *info, int *samp
             }
         }
 
-        if (i + start >= (info->sample_num * info->channels))
+        if (i + start >= (info->sample_num * info->channels)) /* Clean existing window */
         {
             int j;
             for (j=0; j<maxx-21; j++) /* Change to 21 if want right column delimeter */
@@ -85,21 +96,23 @@ void draw_left_panel(int maxx, int maxy, const struct soundfile *info, int *samp
             continue;
         }
 
+        int this_sample = (start + i) / info->channels; /* Current sample number */
 
-        int this_sample = (start + i) / info->channels;
+        /* If we are marking and this sample is in range of reverse video */
         if (marking && ((this_sample <= mark_start && this_sample >= current_sample / info->channels) ||
             (this_sample >= mark_start && this_sample <= current_sample / info->channels)))
             attron(A_REVERSE);
 
-        if (!((start + i) % info->channels))
+        if (!((start + i) % info->channels)) /* First channel of a sample */
             printw("%9d", this_sample);
         else
             printw("         ");
  
-        /*move(2 + i, 9);*/
+        /* Percentage of bars */
         double percentage = (double)  samples[start + i] /
                             (pow(2, info->bit_depth - 1) - 1);
 
+        /* Actual number of bars */
         int rounded =  (int) round(percentage * plot_width);
 
         int k;
@@ -148,18 +161,24 @@ void draw_left_panel(int maxx, int maxy, const struct soundfile *info, int *samp
         attroff(A_REVERSE);
     }
 
-    bottom_sample = MIN(start + i, info->sample_num * info->channels) - 1;
+    bottom_sample = MIN(start + i, info->sample_num * info->channels) - 1; /* Calculate bottom sample number */
 
     refresh();
 }
 
+/**
+ * Draw the right panel
+ *
+ * maxx max width of screen
+ * maxy max height of screen
+ */
 void draw_right_panel(int maxx, int maxy, const struct soundfile *info)
 {
     int right_delimiter = maxx - 21;
 
     int i;
 
-    for (i=2; i<maxy; i++)
+    for (i=2; i<maxy; i++) /* Wipe existing content */
     {
         move(i, right_delimiter + 1);
         clrtoeol();
@@ -194,7 +213,7 @@ void draw_right_panel(int maxx, int maxy, const struct soundfile *info)
         mvprintw(11, right_delimiter + 4, "x: cut");
     }
 
-    if (sample_buffer)
+    if (sample_buffer) /* We have something in copy buffer */
     {
         mvprintw(12, right_delimiter + 4, "^: insert before");
         mvprintw(13, right_delimiter + 4, "v: insert after");
@@ -216,7 +235,6 @@ void draw_right_panel(int maxx, int maxy, const struct soundfile *info)
     for (i=0; i<20; i++)
         addch('=');
 
-    
     if (marking)
         mvprintw(maxy - 2, right_delimiter + 4, "Marked: %d", mark_start);
     if (sample_buffer_len)
@@ -225,9 +243,12 @@ void draw_right_panel(int maxx, int maxy, const struct soundfile *info)
     refresh();
 }
 
+/**
+ * This function reads string into buffer up to len, works only when keypad is on
+ */
 void readline(char *buffer, int len)
 {
-    int curlen = 0;
+    int curlen = 0; /* Current string length */
     int x, y;
 
     getyx(stdscr, y, x);
@@ -235,19 +256,19 @@ void readline(char *buffer, int len)
     {
         int c = getch();
         
-        if (c == KEY_ENTER || c == '\n')
+        if (c == KEY_ENTER || c == '\n') /* User hit enter */
         {
             buffer[curlen] = '\0';
             break;
         }
-        else if (isprint(c))
+        else if (isprint(c)) /* Printable letter, add it */
         {
             if (curlen == len - 1)
                 continue;
             buffer[curlen++] = c;
             addch(c);
         }
-        else if (c == KEY_BACKSPACE)
+        else if (c == KEY_BACKSPACE) /* Backspace, delete */
         {
             if (!curlen)
                 continue;
@@ -258,6 +279,14 @@ void readline(char *buffer, int len)
     }
 }
 
+/**
+ * Prompts user to input something
+ *
+ * maxy max width of window
+ * message the message to display
+ * dest user input goes here, NULL means don't need user to input anything
+ * len read up to this much input
+ */
 void prompt(int maxy, char *message, char *dest, int len)
 {
     move(maxy - 1, 0);
@@ -272,6 +301,12 @@ void prompt(int maxy, char *message, char *dest, int len)
         readline(dest, len);
 }
 
+/**
+ * Insert samples after specified sample
+ *
+ * sample_num the index of sample to append after
+ * samples The copy buffer
+ */
 int *insert_after(int sample_num, int *samples, struct soundfile *info)
 {
     int *new;
@@ -669,6 +704,9 @@ int main(int argc, char *argv[])
                         write_to_cs229(sample_data, &fileinfo, file);
                 }
 
+                if (fileinfo.format == AIFF && fileinfo.channels == 1 && fileinfo.sample_num % 2)
+                    fputc('\0', file);
+
                 fclose(file);
                 prompt(maxy, "File saved.", NULL, 0);
                 draw_left_panel(maxx, maxy, &fileinfo, samples, top_sample);
@@ -686,9 +724,12 @@ int main(int argc, char *argv[])
                     free(samples);
                 return EXIT_SUCCESS;
         }
+        #ifndef NDEBUG
         getyx(stdscr, cury, curx);
         mvprintw(0, 0, "C: %5d T: %5d B: %5d MS: %5d", current_sample, top_sample, bottom_sample, mark_start);
         move(cury, curx);
+        #endif
+        curx++;
     }
 }
 

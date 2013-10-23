@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 
                 if (nl)
                 {
-                    *nl = '\0';
+                    *nl = '\0'; /* Trim \n */
                 }
 
                 file = fopen(filename, "r");
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (optind < argc)
+    if (optind < argc) /* There are files specified through command line */
     {
         for (i=optind; i<argc; i++)
         {
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        file = tmpfile();
+        file = tmpfile(); /* Use tmpfile() so that rewind() works for pipe */
         int c;
         
         while ((c = fgetc(stdin)) != EOF)
@@ -119,7 +119,6 @@ void show_file_info(FILE *file, char *filename)
     }
     else
         FATAL("Unknown sound file format");
-
 
     printf("%12s %d\n", "Sample Rate:", fileinfo.sample_rate);
     printf("%12s %hd\n", "Bit Depth:", fileinfo.bit_depth);

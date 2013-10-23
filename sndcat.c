@@ -9,9 +9,9 @@ int main(int argc, char *argv[])
 {
     FILE *file;
     char opt;
-    enum fileformat output_format = OTHER;
+    enum fileformat output_format = OTHER; /* By default, convert to other format */
 
-    while ((opt = getopt(argc, argv, "hac")) != -1)
+    while ((opt = getopt(argc, argv, "hac")) != -1) /* opt is the command line option */
     {
         switch (opt)
         {
@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
                 output_format = CS229;
                 break;
 
-            case '?':
+            case '?': /* Invalid option */
                 return EXIT_FAILURE;
         }
     }
@@ -46,12 +46,12 @@ int main(int argc, char *argv[])
 
     int i;
 
-    if (optind < argc)
+    if (optind < argc) /* There are files specified through command line  */
     {
         struct soundfile files[argc - optind];
-        int total_sample_num = 0;
+        int total_sample_num = 0; /* Combined file sample number */
 
-        for (i=optind; i<argc; i++)
+        for (i=optind; i<argc; i++) /* Went over all files */
         {
             file = fopen(argv[i], "r");
 
@@ -80,11 +80,11 @@ int main(int argc, char *argv[])
                 }
             }
 
-            total_sample_num += files[i - optind].sample_num;
+            total_sample_num += files[i - optind].sample_num; /* Update total sample number */
         }
 
         struct soundfile output_file;
-        output_file = files[0];
+        output_file = files[0]; /* Copy meta fields since they are the same */
         output_file.sample_num = total_sample_num;
 
         if (output_format == AIFF)
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
         else if (output_format == CS229)
             write_cs229_header(stdout, &output_file);
 
-        for (i=optind; i<argc; i++)
+        for (i=optind; i<argc; i++) /* Enumerate file by file and write */
         {
             file = fopen(argv[i], "r");
 
@@ -101,12 +101,15 @@ int main(int argc, char *argv[])
             else /* CS229 */
                 cs229_enumerate(file, &files[i - optind], output_format == AIFF ? write_to_aiff : write_to_cs229, stdout);
 
+            if (output_format == AIFF && output_file.channels == 1 && output_file.sample_num % 2)
+                fputc('\0', stdout);
+
             fclose(file);
         }
     }
     else /* Read from stdin */
     {
-        file = tmpfile();
+        file = tmpfile(); /* Need using tmpfile() otherwise rewind() doesn't work with pipe */
 
         int c;
         struct soundfile fileinfo;
@@ -131,10 +134,12 @@ int main(int argc, char *argv[])
         else /* CS229 */
             cs229_enumerate(file, &fileinfo, output_format == AIFF ? write_to_aiff : write_to_cs229, stdout);
 
+        if (output_format == AIFF && fileinfo.channels == 1 && fileinfo.sample_num % 2)
+            fputc('\0', stdout);
+
         fclose(file);
     }
 
     return EXIT_SUCCESS;
 }
-
 

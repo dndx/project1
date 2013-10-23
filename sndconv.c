@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     char opt;
     enum fileformat output_format = OTHER;
 
-    while ((opt = getopt(argc, argv, "h1ac")) != -1)
+    while ((opt = getopt(argc, argv, "h1ac")) != -1) /* went over command line options */
     {
         switch (opt)
         {
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
                 
                 if (nl)
                 {
-                    *nl = '\0';
+                    *nl = '\0'; /* Trim \n */
                 }
 
                 ofile = fopen(filename, "w");
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    file = tmpfile();
+    file = tmpfile(); /* use tmpfile otherwise rewind won't work with pipes */
 
     int c;
     
@@ -120,13 +120,21 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
+/**
+ * This function converts from one file into another file
+ *
+ * file is the input file
+ * ofile is the output file
+ * in_name is the inpit file name, for error displaying
+ * output_format is the output format
+ */
 void snd_conv(FILE *file, FILE *ofile, char *in_name, enum fileformat output_format)
 {
     struct soundfile fileinfo;
 
     if (is_aiff_file(file))
     {
-        if (output_format == AIFF)
+        if (output_format == AIFF) /* If the input and output file format are the same, just copy over */
         {
             copy_file(file, ofile);
             return;
@@ -139,7 +147,7 @@ void snd_conv(FILE *file, FILE *ofile, char *in_name, enum fileformat output_for
     }
     else if (is_cs229_file(file))
     {
-        if (output_format == CS229)
+        if (output_format == CS229) /* Same as above */
         {
             copy_file(file, ofile);
             return;
@@ -149,6 +157,9 @@ void snd_conv(FILE *file, FILE *ofile, char *in_name, enum fileformat output_for
         fileinfo = cs229_fileinfo(file);
         write_aiff_header(ofile, &fileinfo);
         cs229_enumerate(file, &fileinfo, write_to_aiff, ofile);
+
+        if (fileinfo.channels == 1 && fileinfo.sample_num & 2)
+            fputc('\0', ofile);
     }
     else
     {

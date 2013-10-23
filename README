@@ -55,6 +55,15 @@ Usage:
 ======
 $ ./sndshow -h
 
+sndedit
+=======
+This program shows and let you edit a sound file.
+
+Usage:
+======
+$ ./sndedit (filename)
+filename is the file to edit and is required
+
 How did I broke files
 =====================
 aiff.c    - AIFF check and processing unit
@@ -67,6 +76,7 @@ sndconv.c - Main function of sndconv
 sndcut.c  - Main function of sndcut
 sndinfo.c - Main function of sndinfo
 sndshow.c - Main function of sndshow
+sndedit.c - Mail function of sndedit
 sound.h   - Define common data structures shared across whole project
 utils.c   - Utility functions
 utils.h   - Utility macros
@@ -94,10 +104,19 @@ Part 2
   than any of my code I could write. 
 * Managed to maximum code reuse, whole part two only contains 1071 lines of code. 
 
+Part 3
+======
+* Callbacks works perfectly for sndedit, yay!
+* Used heap memory in sndedit but did with cautious. 
+* Used some global variables in sndedit for simplicity. Not writing a library
+  so really not caring about thread safe. 
+
 Whole Project
 =============
 * All code are valgrind warning-free (with --leak-check=full). 
+  - Except sndedit since ncurses did not freed all memory after endwin() is
+    called. 
 * Developed with Vim, GCC, GNU Make, gdb, git and tmux on Pyrite.
-  You could git log to see my progress from beginning if you want. 
-  Also, codes from part1 is available with git tag "part1". 
+  You could `git log` to see my progress from beginning if you want. 
+  Also, codes from part1 and part2 are available with git tag "part1" and "part2". 
 

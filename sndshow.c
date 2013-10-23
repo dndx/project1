@@ -7,22 +7,25 @@
 #include "cs229.h"
 #include "aiff.h"
 
+/* A "draw request" for callback function */
 struct draw_req {
-    unsigned int sample_num;
-    int c;
-    int w;
-    int z;
-    int *largest;
+    unsigned int sample_num; /* Current sample number, callback needs increment this manually */
+    int c; /* Show output for channel c only, 0 draws all channels */
+    int w; /* Output width */
+    int z; /* Zoom factor */
+    int *largest; /* For keeping largest samoples if zooming */
 };
 
 /**
  * Draw a sample accoring to passed paramater. 
- * w must be even number
+ * 
+ * w is the output width and must be even number
+ * value is the percentage of "bars" to draw
  */
 void draw_sample(double value, int w)
 {
-    int plot_width = (w - 12) / 2;
-    int rounded = (int) round(value * plot_width);
+    int plot_width = (w - 12) / 2; /* Half width */
+    int rounded = (int) round(value * plot_width); /* Get actual bar number according to width */
     int i;
 
     printf("|");
@@ -68,17 +71,22 @@ void draw_sample(double value, int w)
     printf("|\n");
 }
 
+/**
+ * Draws a sample, this is a valid callback for enumerator
+ *
+ * data is the drawing request
+ */
 void draw_cb(int *samples, const struct soundfile *info, void *data)
 {
     struct draw_req *req = (struct draw_req *) data;
     int i;
 
-    if (req->z > 1)
+    if (req->z > 1) /* If we are zooming */
     {
         int is_key_sample = (!((req->sample_num + 1) % req->z)) || 
-                            (req->sample_num + 1 == info->sample_num);
+                            (req->sample_num + 1 == info->sample_num); /* "Key sample" means we should draw out now */
 
-        for (i=0; i<info->channels; i++)
+        for (i=0; i<info->channels; i++) /* Find the largest sample for that group of sample */
         {
             if (abs(samples[i]) > abs(req->largest[i]))
                 req->largest[i] = samples[i];
@@ -86,35 +94,35 @@ void draw_cb(int *samples, const struct soundfile *info, void *data)
                 req->largest[i] = samples[i];
         }
 
-        if (!is_key_sample)
+        if (!is_key_sample) /* not a key sample and do not draw */
         {
             req->sample_num++;
             return;
         }
 
-        for (i=0; i<info->channels; i++)
+        for (i=0; i<info->channels; i++) /* Replace this sample to largest sample, so that we can re-use existing code */
         {
             samples[i] = req->largest[i];
         }
 
-        if (is_key_sample)
+        if (is_key_sample) /* We no longer need largest sample array */
             memset(req->largest, 0, info->channels * sizeof(int));
 
-        if (req->sample_num + 1 == info->sample_num)
+        if (req->sample_num + 1 == info->sample_num) /* This is the sample number to draw after zooming */
             req->sample_num += (req->z - (req->sample_num % req->z));
 
         printf("%9d", ((((req->sample_num + 1) / req->z)) - 1) * req->z);
     }
-    else
+    else /* Not zooming, draw as normal */
     {
         printf("%9d", req->sample_num);
     }
 
-    if (req->c > 0)
+    if (req->c > 0) /* Draw only channel req->c */
     {
         draw_sample((double) samples[req->c - 1] / (pow(2, info->bit_depth - 1) - 1), req->w);
     }
-    else
+    else /* Draw all channels */
     {
         for (i=0; i<info->channels; i++)
         {
@@ -124,7 +132,7 @@ void draw_cb(int *samples, const struct soundfile *info, void *data)
         }
     }
 
-    req->sample_num++;
+    req->sample_num++; /* Increment sample counter */
 }
 
 int main(int argc, char *argv[])
@@ -185,7 +193,7 @@ int main(int argc, char *argv[])
 
     struct soundfile fileinfo;
 
-    file = tmpfile();
+    file = tmpfile(); /* Using tmpfile() in order for pipe to work */
 
     int cc;
 
@@ -203,7 +211,7 @@ int main(int argc, char *argv[])
         FATAL("Channel number is too big for this file");
 
     struct draw_req req;
-    int tmp[fileinfo.channels];
+    int tmp[fileinfo.channels]; /* This is the array that keeps largest channel values */
     req.sample_num = 0;
     req.c = c;
     req.w = w;
@@ -220,5 +228,4 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-
 

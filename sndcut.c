@@ -6,29 +6,37 @@
 #include "utils.h"
 #include "cs229.h"
 #include "aiff.h"
+
+/* Range for deletion */
 struct deletion {
     unsigned int low;
     unsigned int high;
 };
 
+/* Struct containing information for callback function */
 struct write_req {
-    unsigned int sample_num;
-    struct deletion *ranges;
-    unsigned int num_ranges;
+    unsigned int sample_num; /* current sample num, updated by callback itself */
+    struct deletion *ranges; /* array of ranges to delete */
+    unsigned int num_ranges; /* size of array */
 };
 
+/*
+ * Write to an aiff file, with certain ranges cutted
+ *
+ * data is a struct write_req*
+ */
 void write_to_aiff_cut(int *samples, const struct soundfile *info, void *data)
 {
     struct write_req *req = (struct write_req *) data;
     int i;
-
     
     for (i=0; i<req->num_ranges; i++)
     {
+        /* Since low is always lower or equal than high, so this if statement is suffcient to determine overlapping */
         if (req->ranges[i].low <= req->sample_num && req->ranges[i].high >= req->sample_num)
          {
-            req->sample_num++;
-            return;
+            req->sample_num++; /* We need update counter by ourselves */
+            return; /* Skip this sample */
          }
     }
 
@@ -36,6 +44,11 @@ void write_to_aiff_cut(int *samples, const struct soundfile *info, void *data)
     req->sample_num++;
 }
 
+/*
+ * Write to a cs229 file, with certain ranges cutted
+ *
+ * data is a struct write_req*
+ */
 void write_to_cs229_cut(int *samples, const struct soundfile *info, void *data)
 {
     struct write_req *req = (struct write_req *) data;
@@ -44,10 +57,11 @@ void write_to_cs229_cut(int *samples, const struct soundfile *info, void *data)
 
     for (i=0; i<req->num_ranges; i++)
     {
+        /* Same as above */
         if (req->ranges[i].low <= req->sample_num && req->ranges[i].high >= req->sample_num)
         {
-            req->sample_num++;
-            return;
+            req->sample_num++; /* Same as above */
+            return; /* skip */
         }
     }
 
@@ -80,17 +94,18 @@ int main(int argc, char *argv[])
     }
 
     int i;
-    file = tmpfile();
+    file = tmpfile(); /* In order to make rewind() work with pipes */
 
     int c;
         
     while ((c = fgetc(stdin)) != EOF)
         fputc(c, file);
 
-    if (optind < argc)
+    if (optind < argc) /* we have command line specified files */
     {
         struct soundfile fileinfo;
-        int total_sample_num = 0;
+        int total_sample_num = 0; /* new sample number */
+        /* array big enough to keep all ranges, may not use all if some of the ranges overlap*/
         struct deletion ranges[argc - optind];
 
         if (is_cs229_file(file))
@@ -121,7 +136,7 @@ int main(int argc, char *argv[])
                 FATAL("Invalid argument %s, exceed maximum sample number", argv[i]);
 
             int j;
-            int set = 0; /* This range got addes to existing range */
+            int set = 0; /* This range got added to existing range */
             for (j=0; j<i-optind; j++)
             {
                 if (low <= ranges[j].high &&
@@ -134,7 +149,7 @@ int main(int argc, char *argv[])
                 }
             }
 
-            if (!set) /* Add as new range */
+            if (!set) /* Not overlapping with existing one, add as new range */
             {
                 ranges[i - optind].low = low;
                 ranges[i - optind].high = high;
@@ -144,10 +159,11 @@ int main(int argc, char *argv[])
 
         for (i=0; i<total_ranges; i++)
         {
-            total_sample_num -= ranges[i].high - ranges[i].low + 1;
+            total_sample_num -= ranges[i].high - ranges[i].low + 1; /* Update sample number after cut */
         }
+
         struct soundfile output_file;
-        output_file = fileinfo;
+        output_file = fileinfo; /* Copy all fields */
         output_file.sample_num = total_sample_num;
 
         if (output_file.format == AIFF)
@@ -155,7 +171,7 @@ int main(int argc, char *argv[])
         else if (output_file.format == CS229)
             write_cs229_header(stdout, &output_file);
 
-        struct write_req req;
+        struct write_req req; /* This is used by callback */
         req.sample_num = 0;
         req.ranges = ranges;
         req.num_ranges = argc - optind;
@@ -164,6 +180,9 @@ int main(int argc, char *argv[])
             aiff_enumerate(file, &fileinfo, output_file.format == AIFF ? write_to_aiff_cut : write_to_cs229_cut, &req);
         else /* CS229 */
             cs229_enumerate(file, &fileinfo, output_file.format == AIFF ? write_to_aiff_cut : write_to_cs229_cut, &req);
+
+        if (output_file.format == AIFF && output_file.channels == 1 && output_file.sample_num % 2)
+            fputc('\0', stdout);
 
     }
     else /* Read from stdin */
@@ -177,5 +196,4 @@ int main(int argc, char *argv[])
     fclose(file);
     return EXIT_SUCCESS;
 }
-
 
