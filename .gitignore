@@ -1,6 +1,10 @@
 *.o
 sndinfo
 sndconv
+sndcat
+sndcut
+sndshow
+sndedit
 *.tar.gz
 *.dndx
 *.cs229
