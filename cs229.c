@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include <arpa/inet.h>
 #include "cs229.h"
 #include "utils.h"
@@ -19,7 +20,7 @@ int is_cs229_file(FILE *file)
     while (fgets(buffer, sizeof(buffer), file))
     {
         buffer[strlen(buffer) - 1] = '\0'; /* Strip the \n */
-        if (buffer[0] == '\0' || buffer[0] == '#') /* If comment line or empty line, skip */
+        if (buffer[0] == '\0' || buffer[0] == '#' || buffer[0] == '\n') /* If comment line or empty line, skip */
         {
             continue;
         }
@@ -95,7 +96,7 @@ struct soundfile cs229_fileinfo(FILE *file)
     {
         buffer[strlen(buffer) - 1] = '\0';
 
-        if (buffer[0] == '\0' || buffer[0] == '#')
+        if (buffer[0] == '\0' || buffer[0] == '#' || buffer[0] == '\n')
         {
             continue;
         }
@@ -130,7 +131,7 @@ struct soundfile cs229_fileinfo(FILE *file)
         {
             buffer[strlen(buffer) - 1] = '\0';
 
-            if (buffer[0] == '\0' || buffer[0] == '#')
+            if (buffer[0] == '\0' || buffer[0] == '#' || buffer[0] == '\n')
             {
                 continue;
             }
@@ -163,12 +164,13 @@ int cs229_enumerate(FILE *file, const struct soundfile *info, sample_cb cb, void
     rewind(file);
     int start_convert = 0;
     int samples[info->channels];
+    int max_value = pow(2, info->bit_depth - 1);
 
     while (fgets(buffer, sizeof(buffer), file))
     {
         buffer[strlen(buffer) - 1] = '\0';
 
-        if (buffer[0] == '\0' || buffer[0] == '#')
+        if (buffer[0] == '\0' || buffer[0] == '#' || buffer[0] == '\n')
         {
             continue;
         }
@@ -187,6 +189,10 @@ int cs229_enumerate(FILE *file, const struct soundfile *info, sample_cb cb, void
                     continue; /* Just skip it */
 
                 samples[i] = atoi(result);
+
+                if (samples[i] > max_value - 1 || samples[i] < -max_value)
+                    FATAL("Sample %s overbound", result);
+
                 i++;
             }
             while ((result = strtok(NULL, " ")) && i<info->channels);
