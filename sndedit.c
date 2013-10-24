@@ -13,6 +13,21 @@
 /* Middle line of sample shown area */
 #define MIDDLE_LINE (maxx - 32) / 2 + 10
 
+#define SPLASH_IMAGE \
+"                                                                  ___     \n" \
+"                             ,---,                ,---,  ,--,   ,--.'|_   \n" \
+"                 ,---,     ,---.'|              ,---.'|,--.'|   |  | :,'  \n" \
+"  .--.--.    ,-+-. /  |    |   | :              |   | :|  |,    :  : ' :  \n" \
+" /  /    '  ,--.'|'   |    |   | |   ,---.      |   | |`--'_  .;__,'  /   \n" \
+"|  :  /`./ |   |  ,\"' |  ,--.__| |  /     \\   ,--.__| |,' ,'| |  |   |   \n" \
+"|  :  ;_   |   | /  | | /   ,'   | /    /  | /   ,'   |'  | | :__,'| :    \n" \
+" \\  \\    `.|   | |  | |.   '  /  |.    ' / |.   '  /  ||  | :   '  : |__  \n" \
+"  `----.   \\   | |  |/ '   ; |:  |'   ;   /|'   ; |:  |'  : |__ |  | '.'| \n" \
+" /  /`--'  /   | |--'  |   | '/  ''   |  / ||   | '/  '|  | '.'|;  :    ; \n" \
+"'--'.     /|   |/      |   :    :||   :    ||   :    :|;  :    ;|  ,   /  \n" \
+"  `--'---' '---'        \\   \\  /   \\   \\  /  \\   \\  /  |  ,   /  ---`-'   \n" \
+"                         `----'     `----'    `----'    ---`-'            \n"
+
 /* Some global variables to keep track of state 
  * I knew this is bad, but since there is no multithreading involved, this saves me lots of function paramaters. 
  *
@@ -32,6 +47,7 @@ static int changed = 0;
 struct loadreq {
     int count; /* Counter, callback needs increment this */
     int *dst; /* Destination where loaded samples goes */
+    int maxx; /* Max width of window, used to determine whether to show splash or not */
 };
 
 /**
@@ -40,6 +56,7 @@ struct loadreq {
 void load_samples(int *samples, const struct soundfile *info, void *data)
 {
     struct loadreq *loadreq = (struct loadreq *) data;
+
     /* Copy all channels in samples array to buffer */
     memcpy(loadreq->dst + (loadreq->count * info->channels), samples, info->channels * sizeof(int));
     loadreq->count++;
@@ -50,8 +67,21 @@ void load_samples(int *samples, const struct soundfile *info, void *data)
 
     if (!(loadreq->count % keypoint) || loadreq->count == info->sample_num) /* Update progress every 0.5% or when finished */
     {
-        move(2, 0);
-        clrtoeol();
+        int i;
+        for (i=2; i<17; i++)
+        {
+            move(i, 0);
+            clrtoeol();
+        }
+
+        if (loadreq->maxx > 73)
+        {
+            move(2, 0);
+            printw(SPLASH_IMAGE);
+        }
+
+        move(16, 0);
+
         printw("Loading: %u/%u (%.2f%%)", loadreq->count, info->sample_num,
                                         (float) loadreq->count / info->sample_num * 100);
         refresh();
@@ -437,6 +467,7 @@ int main(int argc, char *argv[])
     struct loadreq req;
     req.count = 0;
     req.dst = samples;
+    req.maxx = maxx;
 
     /* Load all samples into samples buffer */
     if (fileinfo.format == AIFF)
