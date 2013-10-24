@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
         else /* CS229 */
             cs229_enumerate(file, &fileinfo, output_file.format == AIFF ? write_to_aiff_cut : write_to_cs229_cut, &req);
 
-        if (output_file.format == AIFF && output_file.channels == 1 && output_file.sample_num % 2)
+        if (output_file.format == AIFF && output_file.bit_depth == 8 && (output_file.channels * output_file.sample_num) % 2)
             fputc('\0', stdout);
 
     }

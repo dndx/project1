@@ -704,7 +704,7 @@ int main(int argc, char *argv[])
                         write_to_cs229(sample_data, &fileinfo, file);
                 }
 
-                if (fileinfo.format == AIFF && fileinfo.channels == 1 && fileinfo.sample_num % 2)
+                if (fileinfo.format == AIFF && fileinfo.bit_depth == 8 && (fileinfo.channels * fileinfo.sample_num) % 2)
                     fputc('\0', file);
 
                 fclose(file);

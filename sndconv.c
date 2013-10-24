@@ -158,7 +158,7 @@ void snd_conv(FILE *file, FILE *ofile, char *in_name, enum fileformat output_for
         write_aiff_header(ofile, &fileinfo);
         cs229_enumerate(file, &fileinfo, write_to_aiff, ofile);
 
-        if (fileinfo.channels == 1 && fileinfo.sample_num & 2)
+        if (fileinfo.bit_depth == 8 && (fileinfo.channels * fileinfo.sample_num) % 2)
             fputc('\0', ofile);
     }
     else

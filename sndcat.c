@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
             else /* CS229 */
                 cs229_enumerate(file, &files[i - optind], output_format == AIFF ? write_to_aiff : write_to_cs229, stdout);
 
-            if (output_format == AIFF && output_file.channels == 1 && output_file.sample_num % 2)
+            if (output_format == AIFF && output_file.bit_depth == 8 && (output_file.channels * output_file.sample_num) % 2)
                 fputc('\0', stdout);
 
             fclose(file);
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
         else /* CS229 */
             cs229_enumerate(file, &fileinfo, output_format == AIFF ? write_to_aiff : write_to_cs229, stdout);
 
-        if (output_format == AIFF && fileinfo.channels == 1 && fileinfo.sample_num % 2)
+        if (output_format == AIFF && fileinfo.bit_depth == 8 && (fileinfo.channels * fileinfo.sample_num) % 2)
             fputc('\0', stdout);
 
         fclose(file);
