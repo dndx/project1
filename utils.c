@@ -3,6 +3,8 @@
 /*
  * This function flips byte order of a 64 bit int. 
  * Note: only works on 80386 CPUs
+ *
+ * This code comes from glibc, not written by myself
  */
 unsigned long long int byte_swap_64(unsigned long long int x)
 {
@@ -15,6 +17,9 @@ unsigned long long int byte_swap_64(unsigned long long int x)
     return __x.__ll;
 }
 
+/**
+ * Copy all contents in file to ofile byte by byte
+ */
 void copy_file(FILE *file, FILE *ofile)
 {
     int c;
@@ -28,6 +33,9 @@ void copy_file(FILE *file, FILE *ofile)
     }
 }
 
+/**
+ * Simple callback for dounting sample numbers
+ */
 void sample_count(int *samples, const struct soundfile *info, void *data)
 {
     int *counter = (int *) data;

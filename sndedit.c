@@ -10,12 +10,20 @@
 #include "cs229.h"
 #include "aiff.h"
 
-/* Middle like of sample shown area */
+/* Middle line of sample shown area */
 #define MIDDLE_LINE (maxx - 32) / 2 + 10
 
-/* SOme global variables to keep track of state */
-static int top_sample, bottom_sample, mark_start = -1, marking;
-static int current_sample = 0;
+/* Some global variables to keep track of state 
+ * I knew this is bad, but since there is no multithreading involved, this saves me lots of function paramaters. 
+ *
+ * top_sample is the absolute index of sample currently on top of window
+ * current_sample is the absolute index of sample cursor is currently on
+ * bottom_sample is the absolute index of sample currently on bottom of window
+ * sample_buffer is the buffer for copy, NULL for nothing in there
+ * sample_buffer_len is the length of sample_buffer
+ * changes is a flag denotes file have been changed and enable save
+ */
+static int top_sample, current_sample, bottom_sample, mark_start = -1, marking;
 static int *sample_buffer = NULL;
 static int sample_buffer_len = 0;
 static int changed = 0;
@@ -51,7 +59,7 @@ void load_samples(int *samples, const struct soundfile *info, void *data)
 }
 
 /**
- * Draw sample display area
+ * Draw sample display area (left panel)
  *
  * maxx max width of screen
  * maxy max height of screen
@@ -65,15 +73,14 @@ void draw_left_panel(int maxx, int maxy, const struct soundfile *info, int *samp
 
     top_sample = start;
 
-    for (i=0; 2+i<maxy; i++) /* Went from top to bottom */
+    for (i=0; 2+i<maxy; i++) /* Went from top of screen to bottom */
     {
-        
         move(2 + i, 0);
 
         if (!samples) /* No sample available */
         {
             int j;
-            for (j=0; j<maxx-21; j++) /* clean existing window */
+            for (j=0; j<maxx-21; j++) /* clean area */
                 addch(' ');
             addch('|');
 
@@ -87,7 +94,7 @@ void draw_left_panel(int maxx, int maxy, const struct soundfile *info, int *samp
             }
         }
 
-        if (i + start >= (info->sample_num * info->channels)) /* Clean existing window */
+        if (i + start >= (info->sample_num * info->channels)) /* Clean existing area, with samples */
         {
             int j;
             for (j=0; j<maxx-21; j++) /* Change to 21 if want right column delimeter */
@@ -98,7 +105,7 @@ void draw_left_panel(int maxx, int maxy, const struct soundfile *info, int *samp
 
         int this_sample = (start + i) / info->channels; /* Current sample number */
 
-        /* If we are marking and this sample is in range of reverse video */
+        /* If we are marking and this sample is in the range of reverse video */
         if (marking && ((this_sample <= mark_start && this_sample >= current_sample / info->channels) ||
             (this_sample >= mark_start && this_sample <= current_sample / info->channels)))
             attron(A_REVERSE);
@@ -112,7 +119,7 @@ void draw_left_panel(int maxx, int maxy, const struct soundfile *info, int *samp
         double percentage = (double)  samples[start + i] /
                             (pow(2, info->bit_depth - 1) - 1);
 
-        /* Actual number of bars */
+        /* Actual number of bars to draw */
         int rounded =  (int) round(percentage * plot_width);
 
         int k;
@@ -174,7 +181,7 @@ void draw_left_panel(int maxx, int maxy, const struct soundfile *info, int *samp
  */
 void draw_right_panel(int maxx, int maxy, const struct soundfile *info)
 {
-    int right_delimiter = maxx - 21;
+    int right_delimiter = maxx - 21; /* x coordinate right panel starts */
 
     int i;
 
@@ -195,7 +202,7 @@ void draw_right_panel(int maxx, int maxy, const struct soundfile *info)
     for (i=0; i<20; i++)
         addch('=');
 
-    /* Middle part start */
+    /* Middle part start, magic numbers everywhere, baaaaaad :B */
     move(9, right_delimiter + 1);
     if (!marking)
         if (info->sample_num)
@@ -244,7 +251,7 @@ void draw_right_panel(int maxx, int maxy, const struct soundfile *info)
 }
 
 /**
- * This function reads string into buffer up to len, works only when keypad is on
+ * This function reads string from ncurses window into buffer up to len-1, works only when keypad is on
  */
 void readline(char *buffer, int len)
 {
@@ -261,14 +268,14 @@ void readline(char *buffer, int len)
             buffer[curlen] = '\0';
             break;
         }
-        else if (isprint(c)) /* Printable letter, add it */
+        else if (isprint(c)) /* Printable letter, echo it */
         {
             if (curlen == len - 1)
                 continue;
             buffer[curlen++] = c;
             addch(c);
         }
-        else if (c == KEY_BACKSPACE) /* Backspace, delete */
+        else if (c == KEY_BACKSPACE) /* Backspace, delete character if there are */
         {
             if (!curlen)
                 continue;
@@ -284,8 +291,8 @@ void readline(char *buffer, int len)
  *
  * maxy max width of window
  * message the message to display
- * dest user input goes here, NULL means don't need user to input anything
- * len read up to this much input
+ * dest user input goes here, NULL means don't need user to input anything (use as message box)
+ * len read up to len-1 character
  */
 void prompt(int maxy, char *message, char *dest, int len)
 {
@@ -304,44 +311,54 @@ void prompt(int maxy, char *message, char *dest, int len)
 /**
  * Insert samples after specified sample
  *
- * sample_num the index of sample to append after
- * samples The copy buffer
+ * sample_num The index of sample to append after, this could be -1 means insert at the beginning
+ * samples The buffer contains all samples
  */
 int *insert_after(int sample_num, int *samples, struct soundfile *info)
 {
     int *new;
     new = realloc(samples, (info->sample_num + sample_buffer_len)
-                      * info->channels * sizeof(int));
-    if (!new)
+                      * info->channels * sizeof(int)); /* Reallocate memory according to copy buffer size */
+    if (!new) /* Failed, terminate */
     {
         free(samples);
         endwin();
         FATAL("calloc() failed");
     }
 
+    /**
+     * Shifts every sample after sample_num by the copy buffer size
+     */
     memmove(new + (sample_num + 1 + sample_buffer_len) * info->channels,
             new + (sample_num + 1) * info->channels,
             (info->sample_num - sample_num - 1) * info->channels * sizeof(int));
+    /**
+     * Copy the copy buffer to the spaces we got by shifting
+     */
     memcpy(new + (sample_num + 1) * info->channels,
            sample_buffer, sample_buffer_len * info->channels * sizeof(int));
 
-    info->sample_num += sample_buffer_len;
+    info->sample_num += sample_buffer_len; /* Update sample_num accordingly */
 
-    return new;
+    return new; /* Return the pointer to all sample in case it changed by realloc */
 }
 
 /**
- * Delete some sample, inclusive
+ * Delete samples and resize the sample array
+ *
+ * sample_num delete from this sample, inclusive
+ * samples the sample array
  */
 int *delete_from(int sample_num, int *samples, struct soundfile *info)
 {
-    if (sample_buffer_len == info->sample_num)
+    if (sample_buffer_len == info->sample_num) /* If we are deleting all samples */
     {
         free(samples);
         info->sample_num = 0;
         return NULL;
     }
-    if (sample_num < info->sample_num - 1)
+
+    if (sample_num < info->sample_num - 1) /* If we are NOT deleting last sample in array, which needs shifting */
         memmove(samples + sample_num * info->channels,
                 samples + (sample_num + sample_buffer_len) * info->channels,
                 (info->sample_num - sample_num - sample_buffer_len) *
@@ -357,7 +374,7 @@ int *delete_from(int sample_num, int *samples, struct soundfile *info)
         FATAL("calloc() failed");
     }
 
-    info->sample_num -= sample_buffer_len;
+    info->sample_num -= sample_buffer_len; /* update file information*/
 
     return new;
 }
@@ -365,7 +382,7 @@ int *delete_from(int sample_num, int *samples, struct soundfile *info)
 int main(int argc, char *argv[])
 {
     #ifndef NDEBUG
-    getchar();
+    getchar(); /* pause the program so that gdb would have chance to attach it */
     #endif
     FILE *file;
     struct soundfile fileinfo;
@@ -402,11 +419,11 @@ int main(int argc, char *argv[])
         FATAL("Width and Height of window must be geater than 40 and 24");
     }
 
-    if (maxx % 2)
+    if (maxx % 2) /* Width is odd */
         maxx--;
 
     strcpy(buffer, argv[1]);
-    strcat(buffer, fileinfo.format == AIFF ? " (aiff)" : " (cs229)");
+    strcat(buffer, fileinfo.format == AIFF ? " (aiff)" : " (cs229)"); /* This is the window "title" */
     mvprintw(0, (maxx - strlen(buffer)) / 2, buffer);
 
     move(1, 0);
@@ -421,6 +438,7 @@ int main(int argc, char *argv[])
     req.count = 0;
     req.dst = samples;
 
+    /* Load all samples into samples buffer */
     if (fileinfo.format == AIFF)
         aiff_enumerate(file, &fileinfo, load_samples, &req);
     else
@@ -428,21 +446,21 @@ int main(int argc, char *argv[])
 
     fclose(file);
 
-    if (!fileinfo.sample_num)
+    if (!fileinfo.sample_num) /* Zero sample file */
     {
-        free(samples);
+        free(samples); /* Linux will return a valid pointer for malloc(0), which is weird. And we still need to free it */
         samples = NULL;
-        top_sample = current_sample = bottom_sample = -1;
+        top_sample = current_sample = bottom_sample = -1; /* This is the state when no smples are in samples buffer */
     }
 
-    if (samples)
+    if (samples) /* If there are at least 1 sample */
         draw_left_panel(maxx, maxy, &fileinfo, samples, 0);
     else
         draw_left_panel(maxx, maxy, &fileinfo, samples, -1);
 
     draw_right_panel(maxx, maxy, &fileinfo);
 
-    if (samples)
+    if (samples) /* If there are sample */
         move(2, MIDDLE_LINE);
     else
         move(2, 0);
@@ -455,65 +473,66 @@ int main(int argc, char *argv[])
 
         switch (input)
         {
-            case KEY_DOWN:
-                if (current_sample < fileinfo.sample_num * fileinfo.channels - 1)
+            case KEY_DOWN: /* Down arrow */
+                if (current_sample < fileinfo.sample_num * fileinfo.channels - 1) /* If we are not on the last channels of last sample */
                     current_sample++;
                 else
                     break;
                 draw_right_panel(maxx, maxy, &fileinfo);
-                if (cury == (maxy - 1))
+                if (cury == (maxy - 1)) /* We are on the last sample of this screen, scroll it down */
                 {
                     draw_left_panel(maxx, maxy, &fileinfo, samples, ++top_sample);
                     move(cury, MIDDLE_LINE);
                 }
                 else
                 {
-                    if (marking)
+                    if (marking) /* If we are marking, we needs to redraw the panel for reversed video */
                         draw_left_panel(maxx, maxy, &fileinfo, samples, top_sample);
                     move(cury + 1, MIDDLE_LINE);
                 }
                 break;
-            case KEY_UP:
-                if (current_sample > 0)
+            case KEY_UP: /* Up arrow */
+                if (current_sample > 0) /* If we are not at the first index */
                     current_sample--;
                 else
                     break;
                 draw_right_panel(maxx, maxy, &fileinfo);
-                if (cury == 2)
+                if (cury == 2) /* We are at the first index of this screen */
                 {
                     draw_left_panel(maxx, maxy, &fileinfo, samples, --top_sample);
                     move(cury, MIDDLE_LINE);
                 }
                 else
                 {
-                    if (marking)
+                    if (marking) /* Update reversed video if we are marking */
                         draw_left_panel(maxx, maxy, &fileinfo, samples, top_sample);
                     move(cury - 1, MIDDLE_LINE);
                 }
                 break;
-            case KEY_NPAGE:
-                if (bottom_sample >= fileinfo.sample_num * fileinfo.channels - 1)
+            case KEY_NPAGE: /* pgdn */
+                if (bottom_sample >= fileinfo.sample_num * fileinfo.channels - 1) /* last page */
                     break;
+                /* Check if we run over bound */
                 current_sample = MIN(current_sample + maxy - 2, fileinfo.sample_num * fileinfo.channels - 1);
                 draw_left_panel(maxx, maxy, &fileinfo, samples, top_sample += (maxy - 2));
                 draw_right_panel(maxx, maxy, &fileinfo);
                 move(MIN(cury, bottom_sample - top_sample + 2), MIDDLE_LINE);
                 break;
-            case KEY_PPAGE:
-                if (top_sample <= 0)
+            case KEY_PPAGE: /* pgup */
+                if (top_sample <= 0) /* first page */
                     break;
                 if (maxy - 2 > top_sample)
-                    current_sample -= top_sample;
+                    current_sample -= top_sample; /* If we can still scrool up */
                 else
                     current_sample -= (maxy - 2);
-                top_sample = MAX(top_sample - (maxy - 2), 0);
+                top_sample = MAX(top_sample - (maxy - 2), 0); /* Don't run over bound */
                 draw_left_panel(maxx, maxy, &fileinfo, samples, top_sample);
                 draw_right_panel(maxx, maxy, &fileinfo);
                 move(cury, MIDDLE_LINE);
                 break;
-            case 'g':
-                prompt(maxy, "Please enter a sample number: ", buffer, 9);
-                if (!buffer[0])
+            case 'g': /* Goto */
+                prompt(maxy, "Please enter a sample number: ", buffer, 10); /* Prompts user for a sample number, up to 9 digits */
+                if (!buffer[0]) /* If user typed nothing */
                 {
                     draw_left_panel(maxx, maxy, &fileinfo, samples, top_sample);
                     draw_right_panel(maxx, maxy, &fileinfo);
@@ -524,7 +543,7 @@ int main(int argc, char *argv[])
                     break;
                 }
                 int num = atoi(buffer);
-                if (num > (int) fileinfo.sample_num - 1 || num < 0)
+                if (num > (int) fileinfo.sample_num - 1 || num < 0) /* num is out bound */
                 {
                     prompt(maxy, "Invalid sample number", NULL, 0);
                     draw_left_panel(maxx, maxy, &fileinfo, samples, top_sample);
@@ -537,6 +556,7 @@ int main(int argc, char *argv[])
                     }
                     break;
                 }
+                /* Requested sample doesn't need scrool */
                 if (num * fileinfo.channels >= top_sample && num * fileinfo.channels <= bottom_sample)
                 {
                     current_sample = num * fileinfo.channels;
@@ -544,7 +564,7 @@ int main(int argc, char *argv[])
                     draw_right_panel(maxx, maxy, &fileinfo);
                     move(num * fileinfo.channels - top_sample + 2, MIDDLE_LINE);
                 }
-                else if (num * fileinfo.channels > bottom_sample)
+                else if (num * fileinfo.channels > bottom_sample) /* needs scrool down */
                 {
                     bottom_sample = num * fileinfo.channels;
                     top_sample = bottom_sample - (maxy - 3);
@@ -553,7 +573,7 @@ int main(int argc, char *argv[])
                     draw_right_panel(maxx, maxy, &fileinfo);
                     move(maxy - 1, MIDDLE_LINE);
                 }
-                else /* bottom > num */
+                else /* needs scrool up */
                 {
                     top_sample = num * fileinfo.channels;
                     bottom_sample = top_sample + (maxy - 3);
@@ -564,37 +584,26 @@ int main(int argc, char *argv[])
                 }
                 break;
             case 'm':
-                if (!samples)
+                if (!samples) /* No sample, why the hell do you want mark? */
                     break;
-                if (!marking) /* Not marking */
+                if (!marking) /* Not marking, save current location to mark_start */
                 {
                     mark_start = current_sample / fileinfo.channels;
                     marking = 1;
                 }
                 else /* Mark end */
                 {
-                    /*
-                    if (current_sample / fileinfo.channels < mark_start)
-                    {
-                        mark_end = mark_start;
-                        mark_start = current_sample / fileinfo.channels;
-                    }
-                    else
-                    {
-                        mark_end = current_sample / fileinfo.channels;
-                    }
-                    */
                     marking = 0;
                 }
                 draw_left_panel(maxx, maxy, &fileinfo, samples, top_sample);
                 draw_right_panel(maxx, maxy, &fileinfo);
                 move(current_sample - top_sample + 2, MIDDLE_LINE);
                 break;
-            case 'c':
-            case 'x':
-                if (!marking)
+            case 'c': /* Copy */
+            case 'x': /* Cut */
+                if (!marking) /* Not marking, no way! */
                     break;
-                if (sample_buffer)
+                if (sample_buffer) /* If there was something in copy buffer, free it first */
                 {
                     free(sample_buffer);
                     sample_buffer = NULL;
@@ -602,6 +611,7 @@ int main(int argc, char *argv[])
 
                 int mark_end;
 
+                /* These code make sure mark_end is always greater or equal to mark_start */
                 if (current_sample / fileinfo.channels < mark_start)
                 {
                     mark_end = mark_start;
@@ -613,7 +623,7 @@ int main(int argc, char *argv[])
                 }
 
                 sample_buffer = calloc((mark_end - mark_start + 1) 
-                                       * fileinfo.channels, sizeof(int));
+                                       * fileinfo.channels, sizeof(int)); /* allocate memory for copy buffer */
                 if (!sample_buffer)
                 {
                     free(samples);
@@ -622,33 +632,44 @@ int main(int argc, char *argv[])
                 }
 
                 memcpy(sample_buffer, samples + mark_start * fileinfo.channels, 
-                       (mark_end - mark_start + 1) * fileinfo.channels * sizeof(int));
+                       (mark_end - mark_start + 1) * fileinfo.channels * sizeof(int)); /* Copy samples into buffer  */
                 sample_buffer_len = mark_end - mark_start + 1;
                 marking = 0;
 
-                if (input == 'x')
+                if (input == 'x') /* Cutting, needs remove samples */
                 {
-                    samples = delete_from(mark_start, samples, &fileinfo);
-                    
-                    if (current_sample >= fileinfo.sample_num)
-                        current_sample = fileinfo.sample_num - 1;
-                    changed = 1;;
+                    samples = delete_from(mark_start, samples, &fileinfo); /* Remove selected samples from samples buffer */
+
+                     /* If we are deleting from end of array, needs scrool back a little bit */
+                    if (current_sample >= fileinfo.sample_num * fileinfo.channels && samples)
+                    {
+                        current_sample = (fileinfo.sample_num - 1) * fileinfo.channels;
+                        
+                        if ((fileinfo.sample_num - 1) * fileinfo.channels < top_sample)
+                        {
+                            top_sample = current_sample;
+                            bottom_sample = fileinfo.sample_num * fileinfo.channels - 1;
+                        }
+                    }
+                    else if (!samples)
+                        current_sample = top_sample = bottom_sample = -1;
+                    changed = 1; /* enable saving */
                 }
 
                 draw_left_panel(maxx, maxy, &fileinfo, samples, top_sample);
                 draw_right_panel(maxx, maxy, &fileinfo);
                 if (samples)
                     move(current_sample - top_sample + 2, MIDDLE_LINE);
-                else
+                else /* oops, we cutted all samples */
                     move(2, 0);
                 break;
-            case 'v':
+            case 'v': /* insert after */
                 if (!sample_buffer)
                     break;
-                if (samples)
+                if (samples) /* If there are at least sample, we insert after current sample */
                     samples = insert_after(current_sample / fileinfo.channels,
                                            samples, &fileinfo);
-                else
+                else /* No samples, insert at the beginning */
                 {
                     samples = insert_after(-1, samples, &fileinfo);
                     current_sample = 0;
@@ -659,19 +680,23 @@ int main(int argc, char *argv[])
                 draw_right_panel(maxx, maxy, &fileinfo);
                 move(current_sample - top_sample + 2, MIDDLE_LINE);
                 break;
-            case '^':
+            case '^': /* Insert before */
                 if (!sample_buffer)
                     break;
-                if (samples)
+                if (samples) /* These are same as above */
+                {
                     samples = insert_after(current_sample / fileinfo.channels - 1,
                                            samples, &fileinfo);
+                    current_sample += sample_buffer_len * fileinfo.channels;
+                }
                 else
                 {
                     samples = insert_after(-1, samples, &fileinfo);
-                    top_sample = 0;
+                    current_sample = (fileinfo.sample_num - 1) * fileinfo.channels;
+                    top_sample = current_sample;
                 }
 
-                current_sample += sample_buffer_len * fileinfo.channels;
+                /* Needs scrool down */
                 if (current_sample - top_sample + 2 >= maxy)
                     top_sample += sample_buffer_len * fileinfo.channels;
                 changed = 1;
@@ -679,7 +704,7 @@ int main(int argc, char *argv[])
                 draw_right_panel(maxx, maxy, &fileinfo);
                 move(current_sample - top_sample + 2, MIDDLE_LINE);
                 break;
-            case 's':
+            case 's': /* save */
                 if (!changed)
                     break;
                 file = fopen(argv[1], "w");
@@ -695,7 +720,7 @@ int main(int argc, char *argv[])
                     write_cs229_header(file, &fileinfo);
                 }
 
-                for (i=0; i<fileinfo.sample_num; i++)
+                for (i=0; i<fileinfo.sample_num; i++) /* Went through all samples and call the write callback */
                 {
                     int *sample_data = samples + i * fileinfo.channels;
                     if (fileinfo.format == AIFF)
@@ -704,6 +729,7 @@ int main(int argc, char *argv[])
                         write_to_cs229(sample_data, &fileinfo, file);
                 }
 
+                /* AIFF padding */
                 if (fileinfo.format == AIFF && fileinfo.bit_depth == 8 && (fileinfo.channels * fileinfo.sample_num) % 2)
                     fputc('\0', file);
 
@@ -716,7 +742,7 @@ int main(int argc, char *argv[])
                 else
                     move(2, 0);
                 break;
-            case 'q':
+            case 'q': /* quit */
                 endwin();
                 if (sample_buffer)
                     free(sample_buffer);
@@ -724,12 +750,13 @@ int main(int argc, char *argv[])
                     free(samples);
                 return EXIT_SUCCESS;
         }
+        /* These shows current program state for debugging */
         #ifndef NDEBUG
         getyx(stdscr, cury, curx);
         mvprintw(0, 0, "C: %5d T: %5d B: %5d MS: %5d", current_sample, top_sample, bottom_sample, mark_start);
         move(cury, curx);
         #endif
-        curx++;
+        curx++; /* Because we are not using curx, but getyx needs two variables, use this to shut gcc up (unused variable) */
     }
 }
 

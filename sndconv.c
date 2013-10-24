@@ -159,7 +159,7 @@ void snd_conv(FILE *file, FILE *ofile, char *in_name, enum fileformat output_for
         cs229_enumerate(file, &fileinfo, write_to_aiff, ofile);
 
         if (fileinfo.bit_depth == 8 && (fileinfo.channels * fileinfo.sample_num) % 2)
-            fputc('\0', ofile);
+            fputc('\0', ofile); /* AIFF padding */
     }
     else
     {

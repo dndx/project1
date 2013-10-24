@@ -1,4 +1,4 @@
-CFLAGS=-Wall -ansi -lm -lncurses -g -DNDEBUG
+CFLAGS=-Wall -ansi -lm -lncurses -g #-DNDEBUG
 
 all: sndconv sndinfo sndcat sndcut sndshow sndedit
 

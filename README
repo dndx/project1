@@ -108,7 +108,7 @@ Part 3
 ======
 * Callbacks works perfectly for sndedit, yay!
 * Used heap memory in sndedit but did with cautious. 
-* Used some global variables in sndedit for simplicity. Not writing a library
+* Used some global variables in sndedit for simplicity. Not using multithreading
   so really not caring about thread safe. 
 
 Whole Project

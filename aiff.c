@@ -11,7 +11,7 @@
  */
 int is_aiff_file(FILE *file)
 {
-    char buffer[1024]; /* Should be enough for most files */
+    char buffer[LOAD_BUFFER]; /* Should be enough for most files */
 
     rewind(file);
 
@@ -53,7 +53,7 @@ int is_aiff_file(FILE *file)
  */
 struct soundfile aiff_fileinfo(FILE *file)
 {
-    char buffer[1024];
+    char buffer[LOAD_BUFFER];
     struct soundfile info;
     memset(&info, 0, sizeof(info));
     info.format = AIFF;
@@ -197,7 +197,7 @@ void write_to_aiff(int *samples, const struct soundfile *info, void *data)
  */
 int aiff_enumerate(FILE *file, const struct soundfile *info, sample_cb cb, void *data)
 {
-    char buffer[1024];
+    char buffer[LOAD_BUFFER];
 
     rewind(file);
 

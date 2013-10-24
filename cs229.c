@@ -10,7 +10,7 @@
  */
 int is_cs229_file(FILE *file)
 {
-    char buffer[1024];
+    char buffer[LOAD_BUFFER];
 
     rewind(file);
 
@@ -82,7 +82,7 @@ void write_to_cs229(int *samples, const struct soundfile *info, void *data)
  */
 struct soundfile cs229_fileinfo(FILE *file)
 {
-    char buffer[128];
+    char buffer[LOAD_BUFFER];
     struct soundfile fileinfo;
     memset(&fileinfo, 0, sizeof(fileinfo));
     fileinfo.format = CS229;
@@ -158,7 +158,7 @@ struct soundfile cs229_fileinfo(FILE *file)
  */
 int cs229_enumerate(FILE *file, const struct soundfile *info, sample_cb cb, void *data)
 {
-    char buffer[128];
+    char buffer[LOAD_BUFFER];
 
     rewind(file);
     int start_convert = 0;

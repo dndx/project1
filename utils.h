@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include "sound.h"
 
+/* macro tricks for logging functions to work */
 #define STR(x) #x
 #define TOSTR(x) STR(x)
 
